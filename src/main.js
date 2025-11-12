@@ -2,8 +2,12 @@ const { app, BrowserWindow, ipcMain, clipboard } = require('electron');
 const path = require('path');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (require('electron-squirrel-startup')) {
-  app.quit();
+try {
+  if (require('electron-squirrel-startup')) {
+    app.quit();
+  }
+} catch (e) {
+  // electron-squirrel-startup not available, continue normally
 }
 
 const createWindow = () => {
@@ -59,7 +63,8 @@ const createWindow = () => {
   });
 
   // Clipboard monitoring
-  let lastClipboard = '';
+  let lastClipboardText = '';
+  let lastClipboardImage = '';
   let clipboardInterval;
 
   const startClipboardMonitoring = () => {
@@ -67,22 +72,29 @@ const createWindow = () => {
       const text = clipboard.readText();
       const image = clipboard.readImage();
       
-      if (text && text !== lastClipboard && text.length > 0) {
-        lastClipboard = text;
+      // Check for text first (higher priority)
+      if (text && text !== lastClipboardText && text.length > 0) {
+        lastClipboardText = text;
+        lastClipboardImage = ''; // Clear image tracking when text is copied
         mainWindow.webContents.send('clipboard-change', {
           type: 'text',
           content: text,
           timestamp: new Date().toISOString(),
         });
-      } else if (!image.isEmpty() && clipboard.readText() !== lastClipboard) {
-        // Handle images
+      } 
+      // Only check for images if there's no text or text hasn't changed
+      else if (!image.isEmpty() && !text) {
         const imageData = image.toDataURL();
-        lastClipboard = imageData;
-        mainWindow.webContents.send('clipboard-change', {
-          type: 'image',
-          content: imageData,
-          timestamp: new Date().toISOString(),
-        });
+        // Only send if the image data is different from last time
+        if (imageData !== lastClipboardImage) {
+          lastClipboardImage = imageData;
+          lastClipboardText = ''; // Clear text tracking when image is copied
+          mainWindow.webContents.send('clipboard-change', {
+            type: 'image',
+            content: imageData,
+            timestamp: new Date().toISOString(),
+          });
+        }
       }
     }, 500); // Check every 500ms
   };
@@ -115,6 +127,14 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  // Enable auto-start on Windows startup
+  app.setLoginItemSettings({
+    openAtLogin: true,
+    openAsHidden: false, // Set to true if you want it to start minimized
+    path: process.execPath,
+    args: []
+  });
+
   createWindow();
 
   // On OS X it's common to re-create a window in the app when the

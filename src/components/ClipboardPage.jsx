@@ -77,25 +77,37 @@ export function ClipboardPage() {
       window.electronAPI.startClipboardMonitoring();
       
       window.electronAPI.onClipboardChange((data) => {
-        // Generate temporary title from first line
-        const tempTitle = data.type === 'text' 
-          ? data.content.split('\n')[0].substring(0, 60).trim() || 'Clipboard Item'
-          : 'Image';
-        
-        // Add to local state with unique ID
-        const newItem = {
-          id: Date.now() + Math.random(),
-          ...data,
-          uploaded: false,
-          title: tempTitle,
-        };
-        
-        setClipboardItems(prev => [newItem, ...prev]);
-        
-        // Check if it should be auto-uploaded
-        if (shouldAutoUpload(data.content, prev)) {
-          uploadToServer(newItem);
-        }
+        setClipboardItems(prev => {
+          // Check for duplicates - don't add if the exact same content exists in recent items
+          const isDuplicate = prev.slice(0, 10).some(item => 
+            item.content === data.content && item.type === data.type
+          );
+          
+          if (isDuplicate) {
+            console.log('Duplicate clipboard item detected, skipping...');
+            return prev;
+          }
+          
+          // Generate temporary title from first line
+          const tempTitle = data.type === 'text' 
+            ? data.content.split('\n')[0].substring(0, 60).trim() || 'Clipboard Item'
+            : 'Image';
+          
+          // Add to local state with unique ID
+          const newItem = {
+            id: Date.now() + Math.random(),
+            ...data,
+            uploaded: false,
+            title: tempTitle,
+          };
+          
+          // Check if it should be auto-uploaded
+          if (shouldAutoUpload(data.content, prev)) {
+            uploadToServer(newItem);
+          }
+          
+          return [newItem, ...prev];
+        });
       });
     }
 

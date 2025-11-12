@@ -1,5 +1,9 @@
 // API client for ClipFlow Server
-const API_BASE_URL = 'http://ammarserver:3001/api';
+// In development: use relative path to leverage Vite proxy and avoid CORS issues
+// In production: use direct server URL (CORS not an issue in Electron apps)
+// Check if we're in development by looking at the window location protocol
+const isDev = window.location.protocol === 'http:' && window.location.hostname === 'localhost';
+const API_BASE_URL = isDev ? '/api' : 'http://ammarserver:3001/api';
 
 class ApiClient {
   async request(endpoint, options = {}) {
