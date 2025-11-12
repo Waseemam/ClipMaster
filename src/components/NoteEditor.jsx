@@ -19,6 +19,10 @@ export function NoteEditor({ note, onSave, onDelete }) {
   const [showSummary, setShowSummary] = useState(false);
   const [summary, setSummary] = useState('');
   const [viewMode, setViewMode] = useState('edit'); // 'edit', 'preview', 'split'
+  const [fontSize, setFontSize] = useState(16); // Default font size in pixels
+  const [editorFontSize, setEditorFontSize] = useState(16); // Font size for editor in split view
+  const [previewFontSize, setPreviewFontSize] = useState(16); // Font size for preview in split view
+  const [activeSplitSide, setActiveSplitSide] = useState('editor'); // 'editor' or 'preview'
 
   useEffect(() => {
     if (note) {
@@ -34,6 +38,70 @@ export function NoteEditor({ note, onSave, onDelete }) {
       setHasChanges(false);
     }
   }, [note]);
+
+  // Font size keyboard shortcuts and scroll
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (viewMode === 'split') {
+        // In split view, adjust the active side
+        const setterFunc = activeSplitSide === 'editor' ? setEditorFontSize : setPreviewFontSize;
+        
+        if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
+          e.preventDefault();
+          setterFunc(prev => Math.min(prev + 2, 32));
+        } else if (e.ctrlKey && e.key === '-') {
+          e.preventDefault();
+          setterFunc(prev => Math.max(prev - 2, 10));
+        } else if (e.ctrlKey && e.key === '0') {
+          e.preventDefault();
+          setterFunc(16);
+        }
+      } else {
+        // In edit or preview mode, use single font size
+        if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
+          e.preventDefault();
+          setFontSize(prev => Math.min(prev + 2, 32));
+        } else if (e.ctrlKey && e.key === '-') {
+          e.preventDefault();
+          setFontSize(prev => Math.max(prev - 2, 10));
+        } else if (e.ctrlKey && e.key === '0') {
+          e.preventDefault();
+          setFontSize(16);
+        }
+      }
+    };
+
+    const handleWheel = (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        
+        if (viewMode === 'split') {
+          // In split view, adjust the active side
+          const setterFunc = activeSplitSide === 'editor' ? setEditorFontSize : setPreviewFontSize;
+          
+          if (e.deltaY < 0) {
+            setterFunc(prev => Math.min(prev + 2, 32));
+          } else if (e.deltaY > 0) {
+            setterFunc(prev => Math.max(prev - 2, 10));
+          }
+        } else {
+          // In edit or preview mode, use single font size
+          if (e.deltaY < 0) {
+            setFontSize(prev => Math.min(prev + 2, 32));
+          } else if (e.deltaY > 0) {
+            setFontSize(prev => Math.max(prev - 2, 10));
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+    };
+  }, [viewMode, activeSplitSide]);
 
   const handleTitleChange = (e) => {
     setTitle(e.target.value);
@@ -354,6 +422,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
               placeholder="Start writing your note... (Supports Markdown)"
               value={content}
               onChange={handleContentChange}
+              style={{ fontSize: `${fontSize}px` }}
               className="w-full h-full resize-none border-none shadow-none focus-visible:ring-0 text-base bg-transparent placeholder:text-app-text-muted text-app-text-primary leading-relaxed font-mono"
             />
           </div>
@@ -361,7 +430,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
 
         {viewMode === 'preview' && (
           <div className="flex-1 px-8 py-6 overflow-auto">
-            <div className="prose prose-slate dark:prose-invert max-w-none">
+            <div className="prose prose-slate dark:prose-invert max-w-none" style={{ fontSize: `${fontSize}px` }}>
               {content ? (
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {content}
@@ -376,27 +445,38 @@ export function NoteEditor({ note, onSave, onDelete }) {
         {viewMode === 'split' && (
           <>
             {/* Editor Side */}
-            <div className="flex-1 border-r border-border/50 overflow-hidden flex flex-col">
+            <div 
+              className="flex-1 border-r border-border/50 overflow-hidden flex flex-col"
+              onMouseEnter={() => setActiveSplitSide('editor')}
+            >
               <div className="px-4 py-2 border-b border-border/50 bg-app-bg-primary">
-                <span className="text-xs font-semibold text-app-text-secondary">MARKDOWN</span>
+                <span className="text-xs font-semibold text-app-text-secondary">
+                  MARKDOWN {activeSplitSide === 'editor' && '(Active)'}
+                </span>
               </div>
               <div className="flex-1 px-6 py-4 overflow-auto">
                 <Textarea
                   placeholder="Start writing your note..."
                   value={content}
                   onChange={handleContentChange}
-                  className="w-full h-full resize-none border-none shadow-none focus-visible:ring-0 text-sm bg-transparent placeholder:text-app-text-muted text-app-text-primary leading-relaxed font-mono"
+                  style={{ fontSize: `${editorFontSize}px`, lineHeight: '1.6' }}
+                  className="w-full h-full resize-none border-none shadow-none focus-visible:ring-0 bg-transparent placeholder:text-app-text-muted text-app-text-primary font-mono"
                 />
               </div>
             </div>
             
             {/* Preview Side */}
-            <div className="flex-1 overflow-hidden flex flex-col">
+            <div 
+              className="flex-1 overflow-hidden flex flex-col"
+              onMouseEnter={() => setActiveSplitSide('preview')}
+            >
               <div className="px-4 py-2 border-b border-border/50 bg-app-bg-primary">
-                <span className="text-xs font-semibold text-app-text-secondary">PREVIEW</span>
+                <span className="text-xs font-semibold text-app-text-secondary">
+                  PREVIEW {activeSplitSide === 'preview' && '(Active)'}
+                </span>
               </div>
               <div className="flex-1 px-6 py-4 overflow-auto">
-                <div className="prose prose-slate dark:prose-invert max-w-none prose-sm">
+                <div className="prose prose-slate dark:prose-invert max-w-none prose-sm" style={{ fontSize: `${previewFontSize}px` }}>
                   {content ? (
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {content}

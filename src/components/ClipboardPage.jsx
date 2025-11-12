@@ -23,6 +23,7 @@ export function ClipboardPage() {
   const [uploadedIds, setUploadedIds] = useState(new Set());
   const [generatingTitles, setGeneratingTitles] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [fontSize, setFontSize] = useState(14); // Default font size in pixels
 
   // Load clipboard history from database on mount
   useEffect(() => {
@@ -115,6 +116,48 @@ export function ClipboardPage() {
       if (window.electronAPI) {
         window.electronAPI.removeClipboardListener();
       }
+    };
+  }, []);
+
+  // Font size keyboard shortcuts and scroll
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl + = or Ctrl + + to increase font size
+      if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
+        e.preventDefault();
+        setFontSize(prev => Math.min(prev + 2, 32)); // Max 32px
+      }
+      // Ctrl + - to decrease font size
+      else if (e.ctrlKey && e.key === '-') {
+        e.preventDefault();
+        setFontSize(prev => Math.max(prev - 2, 10)); // Min 10px
+      }
+      // Ctrl + 0 to reset font size
+      else if (e.ctrlKey && e.key === '0') {
+        e.preventDefault();
+        setFontSize(14); // Reset to default
+      }
+    };
+
+    const handleWheel = (e) => {
+      // Ctrl + Scroll to change font size
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          // Scrolling up - increase font size
+          setFontSize(prev => Math.min(prev + 2, 32));
+        } else if (e.deltaY > 0) {
+          // Scrolling down - decrease font size
+          setFontSize(prev => Math.max(prev - 2, 10));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
     };
   }, []);
 
@@ -390,7 +433,7 @@ export function ClipboardPage() {
                           )}
                           
                           {item.type === 'text' ? (
-                            <p className="text-sm text-app-text-primary line-clamp-3 whitespace-pre-wrap break-words font-mono">
+                            <p className="text-sm text-app-text-primary line-clamp-3 whitespace-pre-wrap break-words font-mono" style={{ fontSize: `${fontSize}px` }}>
                               {item.content}
                             </p>
                           ) : (
