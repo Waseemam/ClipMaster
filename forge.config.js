@@ -11,12 +11,9 @@ module.exports = {
       name: '@electron-forge/maker-squirrel',
       config: {
         name: 'ClipMaster',
-        setupIcon: './icon.ico', // Optional: add an icon if you have one
-        iconUrl: 'https://example.com/icon.ico', // Optional: for updates
         setupExe: 'ClipMaster-Setup.exe',
         // Create shortcuts
         noMsi: true,
-        remoteReleases: '',
       },
     },
     {
