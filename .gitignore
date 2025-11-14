@@ -90,3 +90,8 @@ typings/
 
 # Electron-Forge
 out/
+
+# Local database
+data/
+*.db
+*.db-journal

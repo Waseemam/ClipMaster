@@ -422,8 +422,8 @@ export function NoteEditor({ note, onSave, onDelete }) {
               placeholder="Start writing your note... (Supports Markdown)"
               value={content}
               onChange={handleContentChange}
-              style={{ fontSize: `${fontSize}px` }}
-              className="w-full h-full resize-none border-none shadow-none focus-visible:ring-0 text-base bg-transparent placeholder:text-app-text-muted text-app-text-primary leading-relaxed font-mono"
+              style={{ fontSize: `${fontSize}px`, lineHeight: '1.6' }}
+              className="w-full h-full resize-none border-none shadow-none focus-visible:ring-0 bg-transparent placeholder:text-app-text-muted text-app-text-primary font-mono"
             />
           </div>
         )}

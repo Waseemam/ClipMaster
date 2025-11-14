@@ -1,9 +1,13 @@
 # ClipMaster
 
-A powerful clipboard manager built with Electron, React, Tailwind CSS, and shadcn/ui.
+A powerful clipboard manager and note-taking app built with Electron, React, Tailwind CSS, and shadcn/ui.
 
 ## Features
 
+- 📋 **Clipboard Manager** - Automatic clipboard history tracking with AI-generated titles
+- 📝 **Note Editor** - Rich markdown editor with live preview
+- 🤖 **AI Integration** - Auto markdown formatting, text summarization, and smart tagging
+- 💾 **Local SQLite Storage** - All data stored locally, works completely offline
 - ⚡ **Electron** - Cross-platform desktop application
 - ⚛️ **React** - Modern UI framework
 - 🎨 **Tailwind CSS** - Utility-first CSS framework
@@ -12,17 +16,29 @@ A powerful clipboard manager built with Electron, React, Tailwind CSS, and shadc
 
 ## Getting Started
 
-### Install Dependencies
+### Prerequisites
+
+1. Node.js installed on your system
+2. ✅ OpenAI API key already embedded in the app!
+
+### Setup
+
+1. **Install Dependencies**
 
 ```bash
 npm install
 ```
 
-### Run in Development Mode
+2. **Run in Development Mode**
 
 ```bash
 npm start
 ```
+
+The app will create a local SQLite database automatically at:
+- **Windows**: `C:\Users\[username]\AppData\Roaming\ClipMaster\clipmaster.db`
+- **macOS**: `~/Library/Application Support/ClipMaster/clipmaster.db`
+- **Linux**: `~/.config/ClipMaster/clipmaster.db`
 
 ### Build for Production
 
@@ -35,6 +51,10 @@ npm run package
 ```bash
 npm run make
 ```
+
+This will create installers in the `out/` directory.
+
+**✨ Ready to share!** The built EXE includes everything - just send `ClipMaster-Setup.exe` to your friends!
 
 ## Project Structure
 
@@ -66,24 +86,41 @@ npx shadcn@latest add [component-name]
 
 Available components: https://ui.shadcn.com/docs/components
 
-## Database Configuration
+## Database
 
-Your `.env` file contains the MSSQL database configuration:
+ClipMaster uses **SQLite** for local storage. No external database server required!
 
-- **Server**: localhost:1433
-- **Database**: ClipFlow
-- **User**: clipmaster
+- **Location**: Stored in the app's data directory
+- **Backup**: Simply copy the `data/clipmaster.db` file
+- **Tables**: 
+  - `notes` - Your markdown notes with tags and folders
+  - `clipboard_items` - Clipboard history (text and images)
+  - `folders` - Note organization
+  - `tags` - Tag management
 
-Make sure to update these credentials before connecting to your database.
+All data is stored locally and works completely offline.
 
 ## Tech Stack
 
 - **Electron 39.0.0** - Desktop app framework
 - **React 18** - UI library
 - **Vite 5** - Build tool
+- **SQLite (sql.js)** - Local database
+- **OpenAI API** - AI-powered features
 - **Tailwind CSS 3** - Styling
 - **shadcn/ui** - Component library
+- **React Markdown** - Markdown rendering
 - **Electron Forge** - Build and package tools
+
+## AI Features
+
+ClipMaster includes several AI-powered features using OpenAI:
+
+- 🤖 **Auto Markdown** - Convert plain text to properly formatted markdown
+- 📊 **Summarize** - Generate concise summaries of your notes
+- ✨ **Fix & Clear** - Improve grammar, spelling, and clarity
+- 🏷️ **Auto Title & Tags** - Automatically generate titles and tags for notes
+- 💡 **Smart Clipboard Titles** - AI-generated titles for clipboard items
 
 ## License
 

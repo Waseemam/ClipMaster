@@ -1,115 +1,147 @@
-// API client for ClipFlow Server
-// In development: use relative path to leverage Vite proxy and avoid CORS issues
-// In production: use direct server URL (CORS not an issue in Electron apps)
-// Check if we're in development by looking at the window location protocol
-const isDev = window.location.protocol === 'http:' && window.location.hostname === 'localhost';
-const API_BASE_URL = isDev ? '/api' : 'http://ammarserver:3001/api';
+// Local Database API Client
+// Uses Electron IPC to communicate with the SQLite database in the main process
+// All data is stored locally in: C:\Users\[username]\AppData\Local\ClipMaster\
 
-class ApiClient {
-  async request(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    try {
-      const response = await fetch(url, config);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'API request failed');
-      }
-
-      return data;
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
+class LocalDatabaseClient {
+  constructor() {
+    // Check if we're in Electron environment
+    if (!window.electronAPI || !window.electronAPI.db) {
+      console.warn('Electron API not available. Database operations will fail.');
     }
   }
 
   // Notes API
   async getNotes(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    const endpoint = queryString ? `/notes?${queryString}` : '/notes';
-    return this.request(endpoint);
+    try {
+      return await window.electronAPI.db.notes.getAll(params);
+    } catch (error) {
+      console.error('Failed to get notes:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   async getNote(id) {
-    return this.request(`/notes/${id}`);
+    try {
+      return await window.electronAPI.db.notes.getById(id);
+    } catch (error) {
+      console.error('Failed to get note:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   async createNote(noteData) {
-    return this.request('/notes', {
-      method: 'POST',
-      body: JSON.stringify(noteData),
-    });
+    try {
+      return await window.electronAPI.db.notes.create(noteData);
+    } catch (error) {
+      console.error('Failed to create note:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   async updateNote(id, noteData) {
-    return this.request(`/notes/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(noteData),
-    });
+    try {
+      return await window.electronAPI.db.notes.update(id, noteData);
+    } catch (error) {
+      console.error('Failed to update note:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   async deleteNote(id) {
-    return this.request(`/notes/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      return await window.electronAPI.db.notes.delete(id);
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   // Clipboard API
   async getClipboardHistory(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    const endpoint = queryString ? `/clipboard?${queryString}` : '/clipboard';
-    return this.request(endpoint);
+    try {
+      return await window.electronAPI.db.clipboard.getAll(params);
+    } catch (error) {
+      console.error('Failed to get clipboard history:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   async saveClipboardItem(itemData) {
-    return this.request('/clipboard', {
-      method: 'POST',
-      body: JSON.stringify(itemData),
-    });
+    try {
+      return await window.electronAPI.db.clipboard.create(itemData);
+    } catch (error) {
+      console.error('Failed to save clipboard item:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   async deleteClipboardItem(id) {
-    return this.request(`/clipboard/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      return await window.electronAPI.db.clipboard.delete(id);
+    } catch (error) {
+      console.error('Failed to delete clipboard item:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   async clearClipboardHistory() {
-    return this.request('/clipboard/clear', {
-      method: 'DELETE',
-    });
+    try {
+      return await window.electronAPI.db.clipboard.clear();
+    } catch (error) {
+      console.error('Failed to clear clipboard history:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   // Folders API
   async getFolders() {
-    return this.request('/folders');
+    try {
+      return await window.electronAPI.db.folders.getAll();
+    } catch (error) {
+      console.error('Failed to get folders:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   async createFolder(folderData) {
-    return this.request('/folders', {
-      method: 'POST',
-      body: JSON.stringify(folderData),
-    });
+    try {
+      return await window.electronAPI.db.folders.create(folderData);
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   // Tags API
   async getTags() {
-    return this.request('/tags');
+    try {
+      return await window.electronAPI.db.tags.getAll();
+    } catch (error) {
+      console.error('Failed to get tags:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   // Search API
   async search(query) {
-    return this.request(`/search?q=${encodeURIComponent(query)}`);
+    try {
+      return await window.electronAPI.db.notes.search(query);
+    } catch (error) {
+      console.error('Failed to search:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Utility function to get database path (for debugging)
+  async getDatabasePath() {
+    try {
+      return await window.electronAPI.db.getPath();
+    } catch (error) {
+      console.error('Failed to get database path:', error);
+      return { success: false, error: error.message };
+    }
   }
 }
 
-export const api = new ApiClient();
+export const api = new LocalDatabaseClient();
 

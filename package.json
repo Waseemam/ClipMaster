@@ -2,7 +2,7 @@
   "name": "clipmaster",
   "productName": "ClipMaster",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "A powerful clipboard manager and note-taking app with AI-powered features",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
@@ -54,6 +54,7 @@
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
+    "sql.js": "^1.13.0",
     "tailwind-merge": "^2.5.5"
   }
 }

@@ -18,19 +18,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  define: {
-    'process.env.OPENAI_API_KEY': JSON.stringify(process.env.OPENAI_API_KEY || ''),
-  },
   server: {
     port: 3000,
     cors: true,
-    proxy: {
-      '/api': {
-        target: 'http://ammarserver:3001',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
   },
   esbuild: {
     loader: 'jsx',

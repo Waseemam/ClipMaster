@@ -4,6 +4,13 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
+    extraResource: [
+      './installer'
+    ],
+    // Don't pack sql.js into asar - needs to be external
+    asarUnpack: [
+      '**/node_modules/sql.js/**/*'
+    ],
   },
   rebuildConfig: {},
   makers: [
@@ -11,9 +18,13 @@ module.exports = {
       name: '@electron-forge/maker-squirrel',
       config: {
         name: 'ClipMaster',
+        authors: 'Ammar',
+        description: 'A powerful clipboard manager and note-taking app with AI-powered features',
         setupExe: 'ClipMaster-Setup.exe',
-        // Create shortcuts
         noMsi: true,
+        // Shortcuts
+        createDesktopShortcut: true,
+        createStartMenuShortcut: true,
       },
     },
     {
