@@ -72,6 +72,9 @@ export function Sidebar({ notes, currentNote, onNewNote, onSelectNote }) {
           <h2 className="text-lg font-semibold flex items-center gap-2 text-app-text-primary truncate min-w-0">
             <FileText className="w-5 h-5 flex-shrink-0" />
             <span className="truncate">Notes</span>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5 flex-shrink-0">
+              {notes.length}
+            </Badge>
           </h2>
           <Button onClick={onNewNote} size="sm" className="shadow-sm flex-shrink-0 ml-2">
             <PlusCircle className="w-4 h-4 mr-2" />
