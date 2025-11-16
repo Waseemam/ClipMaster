@@ -100,7 +100,7 @@ export function Sidebar({ notes, currentNote, onNewNote, onSelectNote }) {
                 className={`
                   p-3 rounded-lg cursor-pointer transition-all min-w-0
                   ${currentNote?.id === note.id 
-                    ? 'bg-primary text-primary-foreground shadow-md scale-[0.98]' 
+                    ? 'bg-red-600 dark:bg-red-700 text-white shadow-md scale-[0.98]' 
                     : 'hover:bg-muted/50 text-app-text-primary'
                   }
                 `}
