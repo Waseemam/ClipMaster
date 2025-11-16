@@ -60,6 +60,9 @@ typings/
 # dotenv environment variables file
 .env
 .env.test
+.env.local
+.env.production
+.env.development
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -87,6 +90,65 @@ typings/
 
 # Vite
 .vite/
+dist/
+dist-electron/
 
 # Electron-Forge
 out/
+
+# Electron-builder output
+release/
+dist-*
+*.nupkg
+*.blockmap
+*.exe
+*.dmg
+*.snap
+*.deb
+*.rpm
+*.AppImage
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+clipmaster.json
+*.db-journal
+*.db-shm
+*.db-wal
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# IDE - IntelliJ / WebStorm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.7z
+*.zip
+*.tar.gz
