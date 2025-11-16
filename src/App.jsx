@@ -15,6 +15,12 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState('dark'); // Default to dark theme
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Update notification states
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateVersion, setUpdateVersion] = useState('');
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [updateDownloaded, setUpdateDownloaded] = useState(false);
 
   // Apply theme on mount and when it changes
   useEffect(() => {
@@ -32,6 +38,40 @@ function App() {
   // Load notes on mount
   useEffect(() => {
     loadNotes();
+  }, []);
+
+  // Listen for context menu new note event
+  useEffect(() => {
+    const handleContextMenuNewNote = () => {
+      handleNewNote();
+    };
+
+    window.electronAPI?.onContextMenuNewNote(handleContextMenuNewNote);
+
+    return () => {
+      window.electronAPI?.removeContextMenuListener();
+    };
+  }, []);
+
+  // Listen for update events
+  useEffect(() => {
+    window.electronAPI?.onUpdateAvailable((version) => {
+      setUpdateAvailable(true);
+      setUpdateVersion(version);
+    });
+
+    window.electronAPI?.onDownloadProgress((percent) => {
+      setDownloadProgress(percent);
+    });
+
+    window.electronAPI?.onUpdateDownloaded((version) => {
+      setUpdateDownloaded(true);
+      setUpdateVersion(version);
+    });
+
+    return () => {
+      window.electronAPI?.removeUpdateListeners();
+    };
   }, []);
 
   const loadNotes = async () => {
@@ -126,6 +166,41 @@ function App() {
         onThemeToggle={handleThemeToggle}
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
+      
+      {/* Update notification banner */}
+      {updateDownloaded && (
+        <div className="bg-green-600 text-white px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-medium">
+            ✨ Update {updateVersion} is ready! Restart to install.
+          </span>
+          <button
+            onClick={() => window.electronAPI?.installUpdate()}
+            className="bg-white text-green-600 px-4 py-1 rounded text-sm font-medium hover:bg-green-50 transition-colors"
+          >
+            Restart Now
+          </button>
+        </div>
+      )}
+      
+      {updateAvailable && !updateDownloaded && (
+        <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-medium">
+            {downloadProgress > 0 
+              ? `Downloading update... ${Math.round(downloadProgress)}%`
+              : `🎉 New version ${updateVersion} available!`
+            }
+          </span>
+          {downloadProgress === 0 && (
+            <button
+              onClick={() => window.electronAPI?.downloadUpdate()}
+              className="bg-white text-blue-600 px-4 py-1 rounded text-sm font-medium hover:bg-blue-50 transition-colors"
+            >
+              Download
+            </button>
+          )}
+        </div>
+      )}
+      
       <div className="flex-1 flex overflow-hidden">
         <Navigation currentView={currentView} onViewChange={setCurrentView} />
         

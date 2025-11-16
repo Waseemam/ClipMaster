@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, clipboard } from 'electron';
+import { app, BrowserWindow, ipcMain, clipboard, Menu, Tray, nativeImage } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import JsonDatabase from './lib/jsonDb.js';
 
@@ -10,10 +11,80 @@ if (squirrelStartup) {
 
 // Initialize database
 let db;
+let tray = null;
+let mainWindow = null;
+
+// Configure auto-updater
+autoUpdater.autoDownload = false; // Don't auto-download, ask user first
+autoUpdater.autoInstallOnAppQuit = true; // Install update when app quits
+
+const createTray = () => {
+  // Create tray icon
+  const iconPath = path.join(__dirname, '../build/icon.png');
+  const icon = nativeImage.createFromPath(iconPath);
+  
+  // Resize icon for tray (Windows expects 16x16 or 32x32)
+  const trayIcon = icon.resize({ width: 16, height: 16 });
+  
+  tray = new Tray(trayIcon);
+  tray.setToolTip('ClipMaster - Quick Notes & Clipboard Manager');
+  
+  // Create context menu for tray
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Create New Note',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.webContents.send('context-menu-new-note');
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Show ClipMaster',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      }
+    },
+    {
+      label: 'Hide ClipMaster',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.hide();
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        app.quit();
+      }
+    }
+  ]);
+  
+  tray.setContextMenu(contextMenu);
+  
+  // Double click to show/hide window
+  tray.on('double-click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide();
+      } else {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    }
+  });
+};
 
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1000,
@@ -52,7 +123,8 @@ const createWindow = () => {
   });
 
   ipcMain.on('window-close', () => {
-    mainWindow.close();
+    // Hide window instead of closing it (keeps app in tray)
+    mainWindow.hide();
   });
 
   // Notify renderer when window is maximized/unmaximized
@@ -262,6 +334,62 @@ const createWindow = () => {
   });
 };
 
+// ==================== AUTO-UPDATER ====================
+
+// Auto-updater event handlers
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for updates...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available:', info.version);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-available', info.version);
+  }
+  
+  // Show notification in tray
+  if (tray) {
+    tray.setToolTip(`ClipMaster - Update ${info.version} available!`);
+  }
+});
+
+autoUpdater.on('update-not-available', () => {
+  console.log('No updates available');
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Auto-updater error:', err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  const message = `Downloading: ${Math.round(progressObj.percent)}%`;
+  console.log(message);
+  if (mainWindow) {
+    mainWindow.webContents.send('download-progress', progressObj.percent);
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded:', info.version);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-downloaded', info.version);
+  }
+  
+  // Show notification in tray
+  if (tray) {
+    tray.setToolTip('ClipMaster - Update ready to install!');
+  }
+});
+
+// IPC handlers for update actions
+ipcMain.on('download-update', () => {
+  autoUpdater.downloadUpdate();
+});
+
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall();
+});
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -283,7 +411,18 @@ app.whenReady().then(async () => {
     args: []
   });
 
+  // Create system tray icon
+  createTray();
+
   createWindow();
+
+  // Check for updates after app is ready (wait 3 seconds)
+  setTimeout(() => {
+    if (!process.env.VITE_DEV_SERVER_URL) {
+      // Only check for updates in production (not dev mode)
+      autoUpdater.checkForUpdates();
+    }
+  }, 3000);
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
@@ -294,20 +433,22 @@ app.whenReady().then(async () => {
   });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// Keep app running in tray when all windows are closed
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // Don't quit the app - keep it running in system tray
+  // User can quit from the tray menu
 });
 
-// Close database connection when app quits
+// Close database connection and cleanup when app quits
 app.on('before-quit', () => {
   if (db) {
     db.close();
     console.log('Database connection closed');
+  }
+  
+  // Destroy tray icon
+  if (tray) {
+    tray.destroy();
   }
 });
 

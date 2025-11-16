@@ -11,6 +11,32 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onMaximizeChange: (callback) => ipcRenderer.on('window-maximized', callback),
   onUnmaximizeChange: (callback) => ipcRenderer.on('window-unmaximized', callback),
   
+  // System Tray Context Menu API
+  onContextMenuNewNote: (callback) => {
+    ipcRenderer.on('context-menu-new-note', callback);
+  },
+  removeContextMenuListener: () => {
+    ipcRenderer.removeAllListeners('context-menu-new-note');
+  },
+  
+  // Auto-updater API
+  onUpdateAvailable: (callback) => {
+    ipcRenderer.on('update-available', (event, version) => callback(version));
+  },
+  onDownloadProgress: (callback) => {
+    ipcRenderer.on('download-progress', (event, percent) => callback(percent));
+  },
+  onUpdateDownloaded: (callback) => {
+    ipcRenderer.on('update-downloaded', (event, version) => callback(version));
+  },
+  downloadUpdate: () => ipcRenderer.send('download-update'),
+  installUpdate: () => ipcRenderer.send('install-update'),
+  removeUpdateListeners: () => {
+    ipcRenderer.removeAllListeners('update-available');
+    ipcRenderer.removeAllListeners('download-progress');
+    ipcRenderer.removeAllListeners('update-downloaded');
+  },
+  
   // Clipboard API
   startClipboardMonitoring: () => ipcRenderer.send('start-clipboard-monitoring'),
   stopClipboardMonitoring: () => ipcRenderer.send('stop-clipboard-monitoring'),
