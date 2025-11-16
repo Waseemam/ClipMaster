@@ -60,6 +60,7 @@ export default defineConfig({
   define: {
     'process.env.OPENAI_API_KEY': JSON.stringify(process.env.OPENAI_API_KEY || ''),
     'process.env.OPENAI_MODEL': JSON.stringify(process.env.OPENAI_MODEL || 'gpt-4o-mini'),
+    'process.env.GH_TOKEN': JSON.stringify(process.env.GH_TOKEN || ''),
   },
   build: {
     outDir: 'dist',

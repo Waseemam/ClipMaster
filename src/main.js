@@ -18,6 +18,18 @@ let mainWindow = null;
 autoUpdater.autoDownload = false; // Don't auto-download, ask user first
 autoUpdater.autoInstallOnAppQuit = true; // Install update when app quits
 
+// For private repos - GitHub token configuration
+// The token is read from GH_TOKEN environment variable during build
+if (process.env.GH_TOKEN) {
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'Waseemam',
+    repo: 'ClipMaster',
+    private: true,
+    token: process.env.GH_TOKEN
+  });
+}
+
 const createTray = () => {
   // Create tray icon
   const iconPath = path.join(__dirname, '../build/icon.png');
