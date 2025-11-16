@@ -10,11 +10,14 @@ export default defineConfig({
         'electron/main',
         'electron/common',
         'electron/renderer',
-        'electron-squirrel-startup',
-        'sql.js',
+        // Let Vite bundle everything else
         ...builtinModules,
         ...builtinModules.map(m => `node:${m}`),
       ],
+      output: {
+        // Ensure proper module format
+        format: 'cjs',
+      },
     },
   },
 });

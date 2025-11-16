@@ -6,6 +6,9 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true // Required for Electron renderer process
 });
 
+// Use model from environment variable
+const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
 /**
  * Function 1: Auto Markdown
  * Converts text to proper markdown format without changing content significantly
@@ -13,7 +16,7 @@ const openai = new OpenAI({
 export async function autoMarkdown(text) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: MODEL,
       messages: [{
         role: "system",
         content: "You are a markdown formatter. Convert the given text to proper markdown format. Keep the content exactly the same, only add markdown formatting like headers, lists, bold, italic, code blocks where appropriate. Do not change the meaning or add new content."
@@ -44,7 +47,7 @@ export async function autoMarkdown(text) {
 export async function summarizeText(text) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: MODEL,
       messages: [{
         role: "system",
         content: "You are a text summarizer. Create a concise, clear summary of the given text. Focus on key points and main ideas. Keep it brief but informative."
@@ -75,7 +78,7 @@ export async function summarizeText(text) {
 export async function fixAndClearText(text) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: MODEL,
       messages: [{
         role: "system",
         content: "You are a text editor. Fix grammar, spelling, and punctuation errors. Improve clarity and readability while maintaining the original meaning and tone. Keep the same structure and don't change the content significantly."
@@ -114,7 +117,7 @@ export async function generateClipboardTitle(text) {
     }
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: MODEL,
       messages: [{
         role: "system",
         content: "You are a title generator. Create a short, descriptive title (max 60 characters) that captures the essence of the given text. The title should be clear, concise, and informative. Return ONLY the title, nothing else."
@@ -148,7 +151,7 @@ export async function generateClipboardTitle(text) {
 export async function autoTitleAndTags(text) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: MODEL,
       messages: [{
         role: "system",
         content: "You are a content analyzer. Generate a concise, descriptive title (max 60 characters) and 3-5 relevant tags for the given text. Return ONLY a JSON object with 'title' (string) and 'tags' (array of strings). No additional text or explanation."

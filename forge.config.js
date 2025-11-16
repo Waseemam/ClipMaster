@@ -11,22 +11,20 @@ module.exports = {
       name: '@electron-forge/maker-squirrel',
       config: {
         name: 'ClipMaster',
+        authors: 'Ammar',
+        exe: 'ClipMaster.exe',
         setupExe: 'ClipMaster-Setup.exe',
-        // Create shortcuts
+        // Create shortcuts in Start Menu and Desktop
+        setupMsi: false,
         noMsi: true,
+        createDesktopShortcut: true,
+        createStartMenuShortcut: true,
+        shortcutName: 'ClipMaster',
       },
     },
     {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin'],
-    },
-    {
-      name: '@electron-forge/maker-deb',
-      config: {},
-    },
-    {
-      name: '@electron-forge/maker-rpm',
-      config: {},
     },
   ],
   plugins: [

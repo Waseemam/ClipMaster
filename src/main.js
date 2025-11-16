@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, clipboard } from 'electron';
 import path from 'path';
-import ClipMasterDB from './lib/database.js';
+import JsonDatabase from './lib/jsonDb.js';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 import squirrelStartup from 'electron-squirrel-startup';
@@ -34,8 +34,8 @@ const createWindow = () => {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // Open the DevTools only in development
+  // mainWindow.webContents.openDevTools();
 
   // Window control handlers
   ipcMain.on('window-minimize', () => {
@@ -267,7 +267,7 @@ const createWindow = () => {
 app.whenReady().then(async () => {
   // Initialize database
   try {
-    db = new ClipMasterDB();
+    db = new JsonDatabase();
     await db.initialize();
     console.log('Database initialized successfully');
   } catch (error) {

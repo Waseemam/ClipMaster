@@ -5,7 +5,6 @@ import { Sidebar } from '@/components/Sidebar';
 import { NoteEditor } from '@/components/NoteEditor';
 import { ClipboardPage } from '@/components/ClipboardPage';
 import { db } from '@/lib/localDb';
-import { checkMigrationNeeded, migrateFromApiToLocal } from '@/lib/migrate';
 
 function App() {
   const [currentView, setCurrentView] = useState('notes'); // 'notes' or 'clipboard'
@@ -28,29 +27,10 @@ function App() {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  // Load notes on mount and check for migration
+  // Load notes on mount
   useEffect(() => {
-    initializeApp();
+    loadNotes();
   }, []);
-
-  const initializeApp = async () => {
-    // Check if migration is needed
-    const needsMigration = await checkMigrationNeeded();
-    
-    if (needsMigration) {
-      console.log('🔄 Migration needed, starting data migration...');
-      const result = await migrateFromApiToLocal();
-      
-      if (result.success) {
-        console.log('✅ Migration completed successfully!');
-      } else {
-        console.warn('⚠️ Migration completed with errors:', result.errors);
-      }
-    }
-    
-    // Load notes
-    await loadNotes();
-  };
 
   const loadNotes = async () => {
     try {
