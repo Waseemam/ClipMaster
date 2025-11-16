@@ -20,4 +20,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeClipboardListener: () => {
     ipcRenderer.removeAllListeners('clipboard-change');
   },
+
+  // Database API
+  db: {
+    // Notes
+    getNotes: (params) => ipcRenderer.invoke('db:getNotes', params),
+    getNote: (id) => ipcRenderer.invoke('db:getNote', id),
+    createNote: (noteData) => ipcRenderer.invoke('db:createNote', noteData),
+    updateNote: (id, noteData) => ipcRenderer.invoke('db:updateNote', id, noteData),
+    deleteNote: (id) => ipcRenderer.invoke('db:deleteNote', id),
+    
+    // Folders
+    getFolders: () => ipcRenderer.invoke('db:getFolders'),
+    createFolder: (folderData) => ipcRenderer.invoke('db:createFolder', folderData),
+    
+    // Tags
+    getTags: () => ipcRenderer.invoke('db:getTags'),
+    
+    // Clipboard
+    getClipboardHistory: (params) => ipcRenderer.invoke('db:getClipboardHistory', params),
+    saveClipboardItem: (itemData) => ipcRenderer.invoke('db:saveClipboardItem', itemData),
+    deleteClipboardItem: (id) => ipcRenderer.invoke('db:deleteClipboardItem', id),
+    clearClipboardHistory: () => ipcRenderer.invoke('db:clearClipboardHistory'),
+    
+    // Search
+    search: (query) => ipcRenderer.invoke('db:search', query),
+  },
 });

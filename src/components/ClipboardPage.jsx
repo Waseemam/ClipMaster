@@ -14,7 +14,7 @@ import {
   Circle,
   Clipboard as ClipboardIcon,
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { db } from '@/lib/localDb';
 import { generateClipboardTitle } from '@/lib/ai';
 
 export function ClipboardPage() {
@@ -33,36 +33,24 @@ export function ClipboardPage() {
   const loadClipboardHistory = async () => {
     try {
       setLoading(true);
-      const response = await api.getClipboardHistory();
+      const response = await db.getClipboardHistory();
       
       if (response.success && response.data.items) {
-        // Convert server items to local format
-        const serverItems = response.data.items.map(item => {
-          // Parse content: {title}, {content}
-          let title, content;
-          if (item.content.includes(', ')) {
-            const firstCommaIndex = item.content.indexOf(', ');
-            title = item.content.substring(0, firstCommaIndex);
-            content = item.content.substring(firstCommaIndex + 2); // +2 to skip ", "
-          } else {
-            // Fallback if no title format
-            title = item.content.split('\n')[0].substring(0, 60);
-            content = item.content;
-          }
-          
+        // Convert database items to local format
+        const dbItems = response.data.items.map(item => {
           return {
             id: item.id,
-            content: content,
+            content: item.content,
             type: item.type,
-            timestamp: item.createdAt,
+            timestamp: item.created_at,
             uploaded: true,
-            title: title,
+            title: item.title || item.content.split('\n')[0].substring(0, 60),
           };
         });
-        setClipboardItems(serverItems);
+        setClipboardItems(dbItems);
         
-        // Mark all server items as uploaded
-        const uploadedSet = new Set(serverItems.map(item => item.id));
+        // Mark all database items as uploaded
+        const uploadedSet = new Set(dbItems.map(item => item.id));
         setUploadedIds(uploadedSet);
       }
     } catch (error) {
@@ -208,12 +196,10 @@ export function ClipboardPage() {
         }
       }
       
-      // Format content as {title}, {content} for storage
-      const formattedContent = `${title}, ${item.content}`;
-      
-      const response = await api.saveClipboardItem({
-        content: formattedContent,
+      const response = await db.saveClipboardItem({
+        content: item.content,
         type: item.type,
+        title: title,
       });
       
       if (response.success) {
@@ -230,7 +216,7 @@ export function ClipboardPage() {
         );
       }
     } catch (error) {
-      console.error('Failed to upload clipboard item:', error);
+      console.error('Failed to save clipboard item:', error);
     } finally {
       // Remove from generating state
       setGeneratingTitles(prevSet => {
@@ -260,12 +246,12 @@ export function ClipboardPage() {
       return newSet;
     });
 
-    // Also delete from server if it was uploaded
+    // Also delete from database if it was uploaded
     if (isUploaded) {
       try {
-        await api.deleteClipboardItem(id);
+        await db.deleteClipboardItem(id);
       } catch (error) {
-        console.error('Failed to delete clipboard item from server:', error);
+        console.error('Failed to delete clipboard item from database:', error);
       }
     }
   };
@@ -276,8 +262,8 @@ export function ClipboardPage() {
     }
 
     try {
-      // Clear from server
-      await api.clearClipboardHistory();
+      // Clear from database
+      await db.clearClipboardHistory();
       
       // Clear local state
       setClipboardItems([]);

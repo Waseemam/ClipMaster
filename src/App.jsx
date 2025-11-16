@@ -4,7 +4,8 @@ import { Navigation } from '@/components/Navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { NoteEditor } from '@/components/NoteEditor';
 import { ClipboardPage } from '@/components/ClipboardPage';
-import { api } from '@/lib/api';
+import { db } from '@/lib/localDb';
+import { checkMigrationNeeded, migrateFromApiToLocal } from '@/lib/migrate';
 
 function App() {
   const [currentView, setCurrentView] = useState('notes'); // 'notes' or 'clipboard'
@@ -27,17 +28,36 @@ function App() {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  // Load notes on mount
+  // Load notes on mount and check for migration
   useEffect(() => {
-    loadNotes();
+    initializeApp();
   }, []);
+
+  const initializeApp = async () => {
+    // Check if migration is needed
+    const needsMigration = await checkMigrationNeeded();
+    
+    if (needsMigration) {
+      console.log('🔄 Migration needed, starting data migration...');
+      const result = await migrateFromApiToLocal();
+      
+      if (result.success) {
+        console.log('✅ Migration completed successfully!');
+      } else {
+        console.warn('⚠️ Migration completed with errors:', result.errors);
+      }
+    }
+    
+    // Load notes
+    await loadNotes();
+  };
 
   const loadNotes = async () => {
     try {
       setLoading(true);
-      const response = await api.getNotes();
-      if (response.success && response.data.notes) {
-        const notesList = response.data.notes;
+      const response = await db.getNotes();
+      if (response.success && response.data) {
+        const notesList = response.data;
         setNotes(notesList);
         // Load the most recently updated note
         if (notesList.length > 0) {
@@ -65,7 +85,7 @@ function App() {
     try {
       if (currentNote && !isNewNote) {
         // Update existing note
-        const response = await api.updateNote(currentNote.id, noteData);
+        const response = await db.updateNote(currentNote.id, noteData);
         if (response.success) {
           await loadNotes();
           // Find and set the updated note
@@ -76,12 +96,12 @@ function App() {
         }
       } else {
         // Create new note
-        const response = await api.createNote(noteData);
+        const response = await db.createNote(noteData);
         if (response.success) {
           await loadNotes();
           // Set the newly created note as current
-          if (response.data.note) {
-            setCurrentNote(response.data.note);
+          if (response.data) {
+            setCurrentNote(response.data);
             setIsNewNote(false);
           }
         }
@@ -94,7 +114,7 @@ function App() {
 
   const handleDeleteNote = async (noteId) => {
     try {
-      const response = await api.deleteNote(noteId);
+      const response = await db.deleteNote(noteId);
       if (response.success) {
         await loadNotes();
         setCurrentNote(null);

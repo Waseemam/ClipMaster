@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, clipboard } = require('electron');
 const path = require('path');
+const ClipMasterDB = require('./lib/database');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 try {
@@ -9,6 +10,9 @@ try {
 } catch (e) {
   // electron-squirrel-startup not available, continue normally
 }
+
+// Initialize database
+let db;
 
 const createWindow = () => {
   // Create the browser window.
@@ -121,12 +125,157 @@ const createWindow = () => {
   mainWindow.on('closed', () => {
     stopClipboardMonitoring();
   });
+
+  // ==================== DATABASE IPC HANDLERS ====================
+  
+  // Notes
+  ipcMain.handle('db:getNotes', async (event, params) => {
+    try {
+      const notes = db.getNotes(params);
+      return { success: true, data: notes };
+    } catch (error) {
+      console.error('Get notes error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:getNote', async (event, id) => {
+    try {
+      const note = db.getNote(id);
+      return { success: true, data: note };
+    } catch (error) {
+      console.error('Get note error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:createNote', async (event, noteData) => {
+    try {
+      const note = db.createNote(noteData);
+      return { success: true, data: note };
+    } catch (error) {
+      console.error('Create note error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:updateNote', async (event, id, noteData) => {
+    try {
+      const note = db.updateNote(id, noteData);
+      return { success: true, data: note };
+    } catch (error) {
+      console.error('Update note error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:deleteNote', async (event, id) => {
+    try {
+      const success = db.deleteNote(id);
+      return { success, data: { deleted: success } };
+    } catch (error) {
+      console.error('Delete note error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Folders
+  ipcMain.handle('db:getFolders', async () => {
+    try {
+      const folders = db.getFolders();
+      return { success: true, data: folders };
+    } catch (error) {
+      console.error('Get folders error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:createFolder', async (event, folderData) => {
+    try {
+      const folder = db.createFolder(folderData);
+      return { success: true, data: folder };
+    } catch (error) {
+      console.error('Create folder error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Tags
+  ipcMain.handle('db:getTags', async () => {
+    try {
+      const tags = db.getTags();
+      return { success: true, data: tags };
+    } catch (error) {
+      console.error('Get tags error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Clipboard
+  ipcMain.handle('db:getClipboardHistory', async (event, params) => {
+    try {
+      const items = db.getClipboardHistory(params);
+      return { success: true, data: { items } };
+    } catch (error) {
+      console.error('Get clipboard history error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:saveClipboardItem', async (event, itemData) => {
+    try {
+      const item = db.saveClipboardItem(itemData);
+      return { success: true, data: item };
+    } catch (error) {
+      console.error('Save clipboard item error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:deleteClipboardItem', async (event, id) => {
+    try {
+      const success = db.deleteClipboardItem(id);
+      return { success, data: { deleted: success } };
+    } catch (error) {
+      console.error('Delete clipboard item error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:clearClipboardHistory', async () => {
+    try {
+      const count = db.clearClipboardHistory();
+      return { success: true, data: { count } };
+    } catch (error) {
+      console.error('Clear clipboard history error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Search
+  ipcMain.handle('db:search', async (event, query) => {
+    try {
+      const results = db.search(query);
+      return { success: true, data: results };
+    } catch (error) {
+      console.error('Search error:', error);
+      return { success: false, error: error.message };
+    }
+  });
 };
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  // Initialize database
+  try {
+    db = new ClipMasterDB();
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+  }
+
   // Enable auto-start on Windows startup
   app.setLoginItemSettings({
     openAtLogin: true,
@@ -152,6 +301,14 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+// Close database connection when app quits
+app.on('before-quit', () => {
+  if (db) {
+    db.close();
+    console.log('Database connection closed');
   }
 });
 
