@@ -65,6 +65,14 @@ const createTray = () => {
     },
     { type: 'separator' },
     {
+      label: 'Check for Updates',
+      click: () => {
+        logToRenderer('[AUTO-UPDATER] Manual check triggered from tray menu');
+        autoUpdater.checkForUpdates();
+      }
+    },
+    { type: 'separator' },
+    {
       label: 'Show ClipMaster',
       click: () => {
         if (mainWindow) {
