@@ -18,19 +18,12 @@ let mainWindow = null;
 autoUpdater.autoDownload = false; // Don't auto-download, ask user first
 autoUpdater.autoInstallOnAppQuit = true; // Install update when app quits
 
-// For private repos - GitHub token configuration
-// Hardcode the token for production (it gets bundled into the app)
-const GH_TOKEN = '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';
-
-if (GH_TOKEN) {
-  autoUpdater.setFeedURL({
-    provider: 'github',
-    owner: 'Waseemam',
-    repo: 'ClipMaster',
-    private: true,
-    token: GH_TOKEN
-  });
-}
+// Public repo - no token needed!
+autoUpdater.setFeedURL({
+  provider: 'github',
+  owner: 'Waseemam',
+  repo: 'ClipMaster'
+});
 
 const createTray = () => {
   // Create tray icon - use different paths for dev vs production
@@ -468,7 +461,7 @@ app.whenReady().then(async () => {
     if (!process.env.VITE_DEV_SERVER_URL) {
       // Only check for updates in production (not dev mode)
       logToRenderer('[AUTO-UPDATER] Starting update check...');
-      logToRenderer('[AUTO-UPDATER] Token present: ' + !!GH_TOKEN);
+      logToRenderer('[AUTO-UPDATER] Repo: Waseemam/ClipMaster (public)');
       autoUpdater.checkForUpdates()
         .then(result => {
           logToRenderer('[AUTO-UPDATER] Check complete');
