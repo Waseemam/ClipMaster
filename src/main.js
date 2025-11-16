@@ -19,14 +19,16 @@ autoUpdater.autoDownload = false; // Don't auto-download, ask user first
 autoUpdater.autoInstallOnAppQuit = true; // Install update when app quits
 
 // For private repos - GitHub token configuration
-// The token is read from GH_TOKEN environment variable during build
-if (process.env.GH_TOKEN) {
+// Hardcode the token for production (it gets bundled into the app)
+const GH_TOKEN = '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';
+
+if (GH_TOKEN) {
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'Waseemam',
     repo: 'ClipMaster',
     private: true,
-    token: process.env.GH_TOKEN
+    token: GH_TOKEN
   });
 }
 
@@ -361,7 +363,12 @@ const createWindow = () => {
 const logToRenderer = (message, data = null) => {
   console.log(message, data || '');
   if (mainWindow && mainWindow.webContents) {
-    mainWindow.webContents.executeJavaScript(`console.log('${message}', ${data ? JSON.stringify(data) : '""'})`);
+    const safeMessage = message.replace(/'/g, "\\'").replace(/\n/g, '\\n');
+    if (data) {
+      mainWindow.webContents.executeJavaScript(`console.log('${safeMessage}', ${JSON.stringify(data)})`).catch(() => {});
+    } else {
+      mainWindow.webContents.executeJavaScript(`console.log('${safeMessage}')`).catch(() => {});
+    }
   }
 };
 
@@ -453,13 +460,13 @@ app.whenReady().then(async () => {
     if (!process.env.VITE_DEV_SERVER_URL) {
       // Only check for updates in production (not dev mode)
       logToRenderer('[AUTO-UPDATER] Starting update check...');
-      logToRenderer('[AUTO-UPDATER] Token present: ' + !!process.env.GH_TOKEN);
+      logToRenderer('[AUTO-UPDATER] Token present: ' + !!GH_TOKEN);
       autoUpdater.checkForUpdates()
         .then(result => {
           logToRenderer('[AUTO-UPDATER] Check complete');
         })
         .catch(error => {
-          logToRenderer('[AUTO-UPDATER] ❌ Check failed: ' + error.message);
+          logToRenderer('[AUTO-UPDATER] Check failed: ' + error.message);
         });
     } else {
       logToRenderer('[AUTO-UPDATER] Skipping update check (dev mode)');
