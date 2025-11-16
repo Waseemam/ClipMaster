@@ -228,6 +228,11 @@ function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+      
+      {/* Version Display - Bottom Left */}
+      <div className="fixed bottom-2 left-2 text-xs text-app-text-muted opacity-50 hover:opacity-100 transition-opacity px-2 py-1 bg-app-bg-primary rounded border border-border/30 select-none">
+        v{import.meta.env.APP_VERSION || '1.1.1'}
+      </div>
     </div>
   );
 }

@@ -4,10 +4,15 @@ import electron from 'vite-plugin-electron';
 import renderer from 'vite-plugin-electron-renderer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
+
+// Read version from package.json
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'));
+const appVersion = packageJson.version;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,6 +66,7 @@ export default defineConfig({
     'process.env.OPENAI_API_KEY': JSON.stringify(process.env.OPENAI_API_KEY || ''),
     'process.env.OPENAI_MODEL': JSON.stringify(process.env.OPENAI_MODEL || 'gpt-4o-mini'),
     'process.env.GH_TOKEN': JSON.stringify(process.env.GH_TOKEN || ''),
+    'import.meta.env.APP_VERSION': JSON.stringify(appVersion),
   },
   build: {
     outDir: 'dist',
