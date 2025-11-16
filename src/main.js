@@ -31,12 +31,21 @@ if (process.env.GH_TOKEN) {
 }
 
 const createTray = () => {
-  // Create tray icon
-  const iconPath = path.join(__dirname, '../build/icon.png');
+  // Create tray icon - use different paths for dev vs production
+  let iconPath;
+  if (process.env.VITE_DEV_SERVER_URL) {
+    // Development mode
+    iconPath = path.join(__dirname, '../build/icon.png');
+  } else {
+    // Production mode - icon is in extraResources/build/
+    iconPath = path.join(process.resourcesPath, 'build', 'icon.png');
+  }
+  
+  // Create icon from path and resize for system tray
   const icon = nativeImage.createFromPath(iconPath);
   
-  // Resize icon for tray (Windows expects 16x16 or 32x32)
-  const trayIcon = icon.resize({ width: 16, height: 16 });
+  // For Windows system tray, create a 16x16 icon
+  const trayIcon = icon.resize({ width: 16, height: 16, quality: 'best' });
   
   tray = new Tray(trayIcon);
   tray.setToolTip('ClipMaster - Quick Notes & Clipboard Manager');
