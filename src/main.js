@@ -357,14 +357,22 @@ const createWindow = () => {
 
 // ==================== AUTO-UPDATER ====================
 
+// Helper to log to both console and renderer
+const logToRenderer = (message, data = null) => {
+  console.log(message, data || '');
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.executeJavaScript(`console.log('${message}', ${data ? JSON.stringify(data) : '""'})`);
+  }
+};
+
 // Auto-updater event handlers
 autoUpdater.on('checking-for-update', () => {
-  console.log('[AUTO-UPDATER] Checking for updates...');
+  logToRenderer('[AUTO-UPDATER] Checking for updates...');
 });
 
 autoUpdater.on('update-available', (info) => {
-  console.log('[AUTO-UPDATER] ✅ Update available:', info.version);
-  console.log('[AUTO-UPDATER] Update info:', JSON.stringify(info, null, 2));
+  logToRenderer('[AUTO-UPDATER] ✅ Update available: ' + info.version);
+  logToRenderer('[AUTO-UPDATER] Update info:', info);
   if (mainWindow) {
     mainWindow.webContents.send('update-available', info.version);
   }
@@ -376,12 +384,12 @@ autoUpdater.on('update-available', (info) => {
 });
 
 autoUpdater.on('update-not-available', (info) => {
-  console.log('[AUTO-UPDATER] ❌ No updates available');
-  console.log('[AUTO-UPDATER] Current version:', info.version);
+  logToRenderer('[AUTO-UPDATER] ❌ No updates available');
+  logToRenderer('[AUTO-UPDATER] Current version: ' + (info?.version || 'unknown'));
 });
 
 autoUpdater.on('error', (err) => {
-  console.error('[AUTO-UPDATER] ❌ ERROR:', err.message);
+  logToRenderer('[AUTO-UPDATER] ❌ ERROR: ' + err.message);
   console.error('[AUTO-UPDATER] Full error:', err);
 });
 
@@ -444,17 +452,17 @@ app.whenReady().then(async () => {
   setTimeout(() => {
     if (!process.env.VITE_DEV_SERVER_URL) {
       // Only check for updates in production (not dev mode)
-      console.log('[AUTO-UPDATER] Starting update check...');
-      console.log('[AUTO-UPDATER] Token present:', !!process.env.GH_TOKEN);
+      logToRenderer('[AUTO-UPDATER] Starting update check...');
+      logToRenderer('[AUTO-UPDATER] Token present: ' + !!process.env.GH_TOKEN);
       autoUpdater.checkForUpdates()
         .then(result => {
-          console.log('[AUTO-UPDATER] Check complete:', result);
+          logToRenderer('[AUTO-UPDATER] Check complete');
         })
         .catch(error => {
-          console.error('[AUTO-UPDATER] Check failed:', error);
+          logToRenderer('[AUTO-UPDATER] ❌ Check failed: ' + error.message);
         });
     } else {
-      console.log('[AUTO-UPDATER] Skipping update check (dev mode)');
+      logToRenderer('[AUTO-UPDATER] Skipping update check (dev mode)');
     }
   }, 3000);
 
