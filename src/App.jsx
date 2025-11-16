@@ -4,6 +4,7 @@ import { Navigation } from '@/components/Navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { NoteEditor } from '@/components/NoteEditor';
 import { ClipboardPage } from '@/components/ClipboardPage';
+import { SettingsDialog } from '@/components/SettingsDialog';
 import { db } from '@/lib/localDb';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
   const [isNewNote, setIsNewNote] = useState(false);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState('dark'); // Default to dark theme
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Apply theme on mount and when it changes
   useEffect(() => {
@@ -119,7 +121,11 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-app-bg-secondary">
-      <TitleBar theme={theme} onThemeToggle={handleThemeToggle} />
+      <TitleBar 
+        theme={theme} 
+        onThemeToggle={handleThemeToggle}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
       <div className="flex-1 flex overflow-hidden">
         <Navigation currentView={currentView} onViewChange={setCurrentView} />
         
@@ -141,6 +147,12 @@ function App() {
           <ClipboardPage />
         )}
       </div>
+      
+      {/* Settings Dialog */}
+      <SettingsDialog 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   );
 }

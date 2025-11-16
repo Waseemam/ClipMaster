@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Minus, Square, X, Moon, Sun } from 'lucide-react';
+import { Minus, Square, X, Moon, Sun, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export function TitleBar({ theme, onThemeToggle }) {
+export function TitleBar({ theme, onThemeToggle, onOpenSettings }) {
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
@@ -59,6 +59,16 @@ export function TitleBar({ theme, onThemeToggle }) {
           ) : (
             <Moon className="h-4 w-4" />
           )}
+        </Button>
+
+        {/* Settings */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenSettings}
+          className="h-8 w-8 hover:bg-muted/80 text-app-text-secondary hover:text-app-text-primary transition-all"
+        >
+          <Settings className="h-4 w-4" />
         </Button>
 
         {/* Minimize */}
