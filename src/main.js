@@ -359,11 +359,12 @@ const createWindow = () => {
 
 // Auto-updater event handlers
 autoUpdater.on('checking-for-update', () => {
-  console.log('Checking for updates...');
+  console.log('[AUTO-UPDATER] Checking for updates...');
 });
 
 autoUpdater.on('update-available', (info) => {
-  console.log('Update available:', info.version);
+  console.log('[AUTO-UPDATER] ✅ Update available:', info.version);
+  console.log('[AUTO-UPDATER] Update info:', JSON.stringify(info, null, 2));
   if (mainWindow) {
     mainWindow.webContents.send('update-available', info.version);
   }
@@ -374,12 +375,14 @@ autoUpdater.on('update-available', (info) => {
   }
 });
 
-autoUpdater.on('update-not-available', () => {
-  console.log('No updates available');
+autoUpdater.on('update-not-available', (info) => {
+  console.log('[AUTO-UPDATER] ❌ No updates available');
+  console.log('[AUTO-UPDATER] Current version:', info.version);
 });
 
 autoUpdater.on('error', (err) => {
-  console.error('Auto-updater error:', err);
+  console.error('[AUTO-UPDATER] ❌ ERROR:', err.message);
+  console.error('[AUTO-UPDATER] Full error:', err);
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
@@ -441,7 +444,17 @@ app.whenReady().then(async () => {
   setTimeout(() => {
     if (!process.env.VITE_DEV_SERVER_URL) {
       // Only check for updates in production (not dev mode)
-      autoUpdater.checkForUpdates();
+      console.log('[AUTO-UPDATER] Starting update check...');
+      console.log('[AUTO-UPDATER] Token present:', !!process.env.GH_TOKEN);
+      autoUpdater.checkForUpdates()
+        .then(result => {
+          console.log('[AUTO-UPDATER] Check complete:', result);
+        })
+        .catch(error => {
+          console.error('[AUTO-UPDATER] Check failed:', error);
+        });
+    } else {
+      console.log('[AUTO-UPDATER] Skipping update check (dev mode)');
     }
   }, 3000);
 

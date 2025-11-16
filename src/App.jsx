@@ -55,16 +55,21 @@ function App() {
 
   // Listen for update events
   useEffect(() => {
+    console.log('[UPDATE] Setting up update listeners...');
+    
     window.electronAPI?.onUpdateAvailable((version) => {
+      console.log('[UPDATE] Update available:', version);
       setUpdateAvailable(true);
       setUpdateVersion(version);
     });
 
     window.electronAPI?.onDownloadProgress((percent) => {
+      console.log('[UPDATE] Download progress:', percent + '%');
       setDownloadProgress(percent);
     });
 
     window.electronAPI?.onUpdateDownloaded((version) => {
+      console.log('[UPDATE] Update downloaded:', version);
       setUpdateDownloaded(true);
       setUpdateVersion(version);
     });
