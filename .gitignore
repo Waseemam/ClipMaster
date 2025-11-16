@@ -153,3 +153,12 @@ Desktop.ini
 *.7z
 *.zip
 *.tar.gz
+*.asar
+*.pak
+
+# Large build output directories (IMPORTANT!)
+dist/
+dist-electron/
+out/
+build/Release/
+release/
