@@ -1,14 +1,11 @@
-const { app, BrowserWindow, ipcMain, clipboard } = require('electron');
-const path = require('path');
-const ClipMasterDB = require('./lib/database');
+import { app, BrowserWindow, ipcMain, clipboard } from 'electron';
+import path from 'path';
+import ClipMasterDB from './lib/database.js';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-try {
-  if (require('electron-squirrel-startup')) {
-    app.quit();
-  }
-} catch (e) {
-  // electron-squirrel-startup not available, continue normally
+import squirrelStartup from 'electron-squirrel-startup';
+if (squirrelStartup) {
+  app.quit();
 }
 
 // Initialize database
@@ -267,10 +264,11 @@ const createWindow = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Initialize database
   try {
     db = new ClipMasterDB();
+    await db.initialize();
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Failed to initialize database:', error);

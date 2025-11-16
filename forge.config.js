@@ -3,9 +3,7 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
 module.exports = {
   packagerConfig: {
-    asar: {
-      unpack: '*.{node,dll}'
-    },
+    asar: true,
   },
   rebuildConfig: {},
   makers: [
@@ -32,10 +30,6 @@ module.exports = {
     },
   ],
   plugins: [
-    {
-      name: '@electron-forge/plugin-auto-unpack-natives',
-      config: {},
-    },
     {
       name: '@electron-forge/plugin-vite',
       config: {
@@ -71,7 +65,7 @@ module.exports = {
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
       [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-      [FuseV1Options.OnlyLoadAppFromAsar]: false, // Changed to false to allow unpacked native modules
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
     }),
   ],
 };
