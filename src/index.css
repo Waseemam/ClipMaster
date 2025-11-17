@@ -17,8 +17,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
     
-    /* Primary accent - Beautiful blue */
-    --primary: 221 83% 53%;
+    /* Primary accent - Beautiful red */
+    --primary: 0 84% 60%;
     --primary-foreground: 0 0% 100%;
     
     /* Secondary - Subtle */
@@ -45,7 +45,7 @@
     --input-border: 220 13% 88%;
     
     /* Focus ring */
-    --ring: 221 83% 53%;
+    --ring: 0 84% 60%;
     --radius: 0.5rem;
 
     /* Custom app colors */
@@ -55,8 +55,8 @@
     --app-text-primary: #2e3338;
     --app-text-secondary: #5c6370;
     --app-text-muted: #8a8f98;
-    --app-accent: #3b82f6;
-    --app-accent-hover: #2563eb;
+    --app-accent: #ef4444;
+    --app-accent-hover: #dc2626;
   }
 
   .dark {
@@ -73,8 +73,8 @@
     --popover: 223 39% 15%;
     --popover-foreground: 213 31% 91%;
     
-    /* Primary accent - Bright blue for dark mode */
-    --primary: 217 91% 60%;
+    /* Primary accent - Bright red for dark mode */
+    --primary: 0 72% 51%;
     --primary-foreground: 0 0% 100%;
     
     /* Secondary */
@@ -101,7 +101,7 @@
     --input-border: 223 39% 28%;
     
     /* Focus ring */
-    --ring: 217 91% 60%;
+    --ring: 0 72% 51%;
 
     /* Custom app colors for dark mode */
     --app-bg-primary: #36393f;      /* Title bar - DARKEST */
@@ -110,8 +110,8 @@
     --app-text-primary: #dcddde;
     --app-text-secondary: #b9bbbe;
     --app-text-muted: #72767d;
-    --app-accent: #5865f2;
-    --app-accent-hover: #4752c4;
+    --app-accent: #ef4444;
+    --app-accent-hover: #dc2626;
   }
 }
 

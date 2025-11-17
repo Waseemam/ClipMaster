@@ -188,7 +188,7 @@ function App() {
       )}
       
       {updateAvailable && !updateDownloaded && (
-        <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between">
+        <div className="bg-red-600 text-white px-4 py-2 flex items-center justify-between">
           <span className="text-sm font-medium">
             {downloadProgress > 0 
               ? `Downloading update... ${Math.round(downloadProgress)}%`
@@ -198,7 +198,7 @@ function App() {
           {downloadProgress === 0 && (
             <button
               onClick={() => window.electronAPI?.downloadUpdate()}
-              className="bg-white text-blue-600 px-4 py-1 rounded text-sm font-medium hover:bg-blue-50 transition-colors"
+              className="bg-white text-red-600 px-4 py-1 rounded text-sm font-medium hover:bg-red-50 transition-colors"
             >
               Download
             </button>
