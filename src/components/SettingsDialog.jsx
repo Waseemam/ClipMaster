@@ -263,45 +263,92 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
   if (!isOpen) return null;
 
+  const theme = settings.customTheme || {
+    bgPrimary: '#36393f',
+    bgSecondary: '#2f3136',
+    bgTertiary: '#202225',
+    textPrimary: '#dcddde',
+    textSecondary: '#b9bbbe',
+    textMuted: '#72767d',
+    accent: '#ef4444',
+    border: '#202225',
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#36393f] rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <div 
+        className="rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col"
+        style={{ backgroundColor: theme.bgPrimary }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#202225]">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5" style={{ color: settings.customTheme.accent }} />
+        <div 
+          className="flex items-center justify-between p-4 border-b"
+          style={{ borderColor: theme.border }}
+        >
+          <h2 
+            className="text-lg font-semibold flex items-center gap-2"
+            style={{ color: theme.textPrimary }}
+          >
+            <Sparkles className="w-5 h-5" style={{ color: theme.accent }} />
             Settings
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="transition-colors"
+            style={{ color: theme.textSecondary }}
+            onMouseEnter={(e) => e.target.style.color = theme.textPrimary}
+            onMouseLeave={(e) => e.target.style.color = theme.textSecondary}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-[#202225] bg-[#2f3136]">
+        <div 
+          className="flex border-b"
+          style={{ 
+            borderColor: theme.border,
+            backgroundColor: theme.bgSecondary 
+          }}
+        >
           <button
             onClick={() => setActiveTab('theme')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-all ${
-              activeTab === 'theme'
-                ? 'text-white border-b-2'
-                : 'text-gray-400 hover:text-white'
-            }`}
-            style={activeTab === 'theme' ? { borderBottomColor: settings.customTheme.accent } : {}}
+            className="flex-1 px-4 py-3 text-sm font-medium transition-all border-b-2"
+            style={{
+              color: activeTab === 'theme' ? theme.textPrimary : theme.textSecondary,
+              borderBottomColor: activeTab === 'theme' ? theme.accent : 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'theme') {
+                e.target.style.color = theme.textPrimary;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'theme') {
+                e.target.style.color = theme.textSecondary;
+              }
+            }}
           >
             <Palette className="w-4 h-4 inline mr-2" />
             Theme
           </button>
           <button
             onClick={() => setActiveTab('ai')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-all ${
-              activeTab === 'ai'
-                ? 'text-white border-b-2'
-                : 'text-gray-400 hover:text-white'
-            }`}
-            style={activeTab === 'ai' ? { borderBottomColor: settings.customTheme.accent } : {}}
+            className="flex-1 px-4 py-3 text-sm font-medium transition-all border-b-2"
+            style={{
+              color: activeTab === 'ai' ? theme.textPrimary : theme.textSecondary,
+              borderBottomColor: activeTab === 'ai' ? theme.accent : 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'ai') {
+                e.target.style.color = theme.textPrimary;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'ai') {
+                e.target.style.color = theme.textSecondary;
+              }
+            }}
           >
             <Sparkles className="w-4 h-4 inline mr-2" />
             AI Settings
@@ -314,12 +361,28 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
           {activeTab === 'theme' && (
             <div className="space-y-6">
               {/* Mode Indicator */}
-              <div className="flex items-center justify-between p-4 bg-[#40444b] rounded-lg">
+              <div 
+                className="flex items-center justify-between p-4 rounded-lg"
+                style={{ backgroundColor: theme.bgSecondary }}
+              >
                 <div>
-                  <p className="text-sm font-medium text-white">Current Mode</p>
-                  <p className="text-xs text-gray-400">Theme appearance</p>
+                  <p 
+                    className="text-sm font-medium"
+                    style={{ color: theme.textPrimary }}
+                  >
+                    Current Mode
+                  </p>
+                  <p 
+                    className="text-xs"
+                    style={{ color: theme.textMuted }}
+                  >
+                    Theme appearance
+                  </p>
                 </div>
-                <div className="px-4 py-2 rounded-lg font-medium text-white" style={{ backgroundColor: settings.customTheme.accent }}>
+                <div 
+                  className="px-4 py-2 rounded-lg font-medium text-white" 
+                  style={{ backgroundColor: theme.accent }}
+                >
                   {settings.themeMode === 'dark' ? '🌙 Dark' : '☀️ Light'}
                 </div>
               </div>
@@ -328,41 +391,55 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Palette className="w-4 h-4" style={{ color: settings.customTheme.accent }} />
-                    <label className="text-sm font-medium text-white">
+                    <Palette className="w-4 h-4" style={{ color: theme.accent }} />
+                    <label 
+                      className="text-sm font-medium"
+                      style={{ color: theme.textPrimary }}
+                    >
                       Preset Themes
                     </label>
                   </div>
                   <button
                     onClick={resetToDefault}
-                    className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+                    className="text-xs flex items-center gap-1 transition-colors"
+                    style={{ color: theme.textMuted }}
+                    onMouseEnter={(e) => e.target.style.color = theme.textPrimary}
+                    onMouseLeave={(e) => e.target.style.color = theme.textMuted}
                   >
                     <RotateCcw className="w-3 h-3" />
                     Reset
                   </button>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  {PRESET_THEMES.map((theme) => {
-                    const isActive = JSON.stringify(settings.customTheme) === JSON.stringify(theme.colors);
+                  {PRESET_THEMES.map((presetTheme) => {
+                    const isActive = JSON.stringify(settings.customTheme) === JSON.stringify(presetTheme.colors);
                     return (
                       <button
-                        key={theme.name}
-                        onClick={() => handlePresetTheme(theme)}
-                        className={`
-                          relative p-3 rounded-lg border-2 transition-all hover:scale-105
-                          ${isActive
-                            ? 'border-white shadow-lg'
-                            : 'border-[#202225] hover:border-gray-600'
+                        key={presetTheme.name}
+                        onClick={() => handlePresetTheme(presetTheme)}
+                        className="relative p-3 rounded-lg border-2 transition-all hover:scale-105"
+                        style={{ 
+                          backgroundColor: presetTheme.colors.bgSecondary,
+                          borderColor: isActive ? '#ffffff' : theme.border,
+                          boxShadow: isActive ? '0 4px 6px rgba(0,0,0,0.1)' : 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isActive) {
+                            e.target.style.borderColor = theme.textMuted;
                           }
-                        `}
-                        style={{ backgroundColor: theme.colors.bgSecondary }}
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive) {
+                            e.target.style.borderColor = theme.border;
+                          }
+                        }}
                       >
                         {/* Theme Preview */}
                         <div className="space-y-2 mb-2">
                           <div 
                             className="h-8 rounded flex items-center justify-center text-xs font-medium"
                             style={{ 
-                              backgroundColor: theme.colors.accent,
+                              backgroundColor: presetTheme.colors.accent,
                               color: '#ffffff'
                             }}
                           >
@@ -370,18 +447,24 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                           </div>
                           <div 
                             className="h-6 rounded"
-                            style={{ backgroundColor: theme.colors.bgPrimary }}
+                            style={{ backgroundColor: presetTheme.colors.bgPrimary }}
                           />
                           <div 
                             className="h-4 rounded"
-                            style={{ backgroundColor: theme.colors.bgTertiary }}
+                            style={{ backgroundColor: presetTheme.colors.bgTertiary }}
                           />
                         </div>
-                        <p className="text-xs font-medium text-center" style={{ color: theme.colors.textPrimary }}>
-                          {theme.name}
+                        <p 
+                          className="text-xs font-medium text-center" 
+                          style={{ color: presetTheme.colors.textPrimary }}
+                        >
+                          {presetTheme.name}
                         </p>
-                        <p className="text-[10px] text-center mt-1" style={{ color: theme.colors.textMuted }}>
-                          {theme.mode === 'dark' ? '🌙' : '☀️'}
+                        <p 
+                          className="text-[10px] text-center mt-1" 
+                          style={{ color: presetTheme.colors.textMuted }}
+                        >
+                          {presetTheme.mode === 'dark' ? '🌙' : '☀️'}
                         </p>
                         {isActive && (
                           <div className="absolute top-2 right-2 w-5 h-5 bg-white rounded-full flex items-center justify-center">
@@ -395,171 +478,273 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
               </div>
 
               {/* Custom Color Pickers */}
-              <div className="space-y-4 pt-4 border-t border-[#202225]">
+              <div 
+                className="space-y-4 pt-4 border-t"
+                style={{ borderColor: theme.border }}
+              >
                 <div className="flex items-center gap-2">
-                  <Paintbrush className="w-4 h-4" style={{ color: settings.customTheme.accent }} />
-                  <label className="text-sm font-medium text-white">
+                  <Paintbrush className="w-4 h-4" style={{ color: theme.accent }} />
+                  <label 
+                    className="text-sm font-medium"
+                    style={{ color: theme.textPrimary }}
+                  >
                     Custom Colors
                   </label>
-                  <span className="text-xs text-gray-400">(Advanced)</span>
+                  <span 
+                    className="text-xs"
+                    style={{ color: theme.textMuted }}
+                  >
+                    (Advanced)
+                  </span>
                 </div>
 
                 {/* Color Pickers Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   {/* Background Primary */}
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400">Background Primary</label>
+                    <label 
+                      className="text-xs"
+                      style={{ color: theme.textMuted }}
+                    >
+                      Background Primary
+                    </label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={settings.customTheme.bgPrimary}
                         onChange={(e) => handleColorChange('bgPrimary', e.target.value)}
-                        className="w-16 h-10 rounded cursor-pointer border-2 border-[#202225]"
+                        className="w-16 h-10 rounded cursor-pointer border-2"
+                        style={{ borderColor: theme.border }}
                       />
                       <Input
                         type="text"
                         value={settings.customTheme.bgPrimary}
                         onChange={(e) => handleColorChange('bgPrimary', e.target.value)}
-                        className="flex-1 bg-[#40444b] border-[#202225] text-white uppercase font-mono text-xs"
+                        className="flex-1 uppercase font-mono text-xs"
+                        style={{
+                          backgroundColor: theme.bgSecondary,
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Background Secondary */}
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400">Background Secondary</label>
+                    <label 
+                      className="text-xs"
+                      style={{ color: theme.textMuted }}
+                    >
+                      Background Secondary
+                    </label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={settings.customTheme.bgSecondary}
                         onChange={(e) => handleColorChange('bgSecondary', e.target.value)}
-                        className="w-16 h-10 rounded cursor-pointer border-2 border-[#202225]"
+                        className="w-16 h-10 rounded cursor-pointer border-2"
+                        style={{ borderColor: theme.border }}
                       />
                       <Input
                         type="text"
                         value={settings.customTheme.bgSecondary}
                         onChange={(e) => handleColorChange('bgSecondary', e.target.value)}
-                        className="flex-1 bg-[#40444b] border-[#202225] text-white uppercase font-mono text-xs"
+                        className="flex-1 uppercase font-mono text-xs"
+                        style={{
+                          backgroundColor: theme.bgSecondary,
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Background Tertiary */}
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400">Background Tertiary</label>
+                    <label 
+                      className="text-xs"
+                      style={{ color: theme.textMuted }}
+                    >
+                      Background Tertiary
+                    </label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={settings.customTheme.bgTertiary}
                         onChange={(e) => handleColorChange('bgTertiary', e.target.value)}
-                        className="w-16 h-10 rounded cursor-pointer border-2 border-[#202225]"
+                        className="w-16 h-10 rounded cursor-pointer border-2"
+                        style={{ borderColor: theme.border }}
                       />
                       <Input
                         type="text"
                         value={settings.customTheme.bgTertiary}
                         onChange={(e) => handleColorChange('bgTertiary', e.target.value)}
-                        className="flex-1 bg-[#40444b] border-[#202225] text-white uppercase font-mono text-xs"
+                        className="flex-1 uppercase font-mono text-xs"
+                        style={{
+                          backgroundColor: theme.bgSecondary,
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Accent Color */}
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400">Accent Color</label>
+                    <label 
+                      className="text-xs"
+                      style={{ color: theme.textMuted }}
+                    >
+                      Accent Color
+                    </label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={settings.customTheme.accent}
                         onChange={(e) => handleColorChange('accent', e.target.value)}
-                        className="w-16 h-10 rounded cursor-pointer border-2 border-[#202225]"
+                        className="w-16 h-10 rounded cursor-pointer border-2"
+                        style={{ borderColor: theme.border }}
                       />
                       <Input
                         type="text"
                         value={settings.customTheme.accent}
                         onChange={(e) => handleColorChange('accent', e.target.value)}
-                        className="flex-1 bg-[#40444b] border-[#202225] text-white uppercase font-mono text-xs"
+                        className="flex-1 uppercase font-mono text-xs"
+                        style={{
+                          backgroundColor: theme.bgSecondary,
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Text Primary */}
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400">Text Primary</label>
+                    <label 
+                      className="text-xs"
+                      style={{ color: theme.textMuted }}
+                    >
+                      Text Primary
+                    </label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={settings.customTheme.textPrimary}
                         onChange={(e) => handleColorChange('textPrimary', e.target.value)}
-                        className="w-16 h-10 rounded cursor-pointer border-2 border-[#202225]"
+                        className="w-16 h-10 rounded cursor-pointer border-2"
+                        style={{ borderColor: theme.border }}
                       />
                       <Input
                         type="text"
                         value={settings.customTheme.textPrimary}
                         onChange={(e) => handleColorChange('textPrimary', e.target.value)}
-                        className="flex-1 bg-[#40444b] border-[#202225] text-white uppercase font-mono text-xs"
+                        className="flex-1 uppercase font-mono text-xs"
+                        style={{
+                          backgroundColor: theme.bgSecondary,
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Text Secondary */}
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400">Text Secondary</label>
+                    <label 
+                      className="text-xs"
+                      style={{ color: theme.textMuted }}
+                    >
+                      Text Secondary
+                    </label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={settings.customTheme.textSecondary}
                         onChange={(e) => handleColorChange('textSecondary', e.target.value)}
-                        className="w-16 h-10 rounded cursor-pointer border-2 border-[#202225]"
+                        className="w-16 h-10 rounded cursor-pointer border-2"
+                        style={{ borderColor: theme.border }}
                       />
                       <Input
                         type="text"
                         value={settings.customTheme.textSecondary}
                         onChange={(e) => handleColorChange('textSecondary', e.target.value)}
-                        className="flex-1 bg-[#40444b] border-[#202225] text-white uppercase font-mono text-xs"
+                        className="flex-1 uppercase font-mono text-xs"
+                        style={{
+                          backgroundColor: theme.bgSecondary,
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Text Muted */}
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400">Text Muted</label>
+                    <label 
+                      className="text-xs"
+                      style={{ color: theme.textMuted }}
+                    >
+                      Text Muted
+                    </label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={settings.customTheme.textMuted}
                         onChange={(e) => handleColorChange('textMuted', e.target.value)}
-                        className="w-16 h-10 rounded cursor-pointer border-2 border-[#202225]"
+                        className="w-16 h-10 rounded cursor-pointer border-2"
+                        style={{ borderColor: theme.border }}
                       />
                       <Input
                         type="text"
                         value={settings.customTheme.textMuted}
                         onChange={(e) => handleColorChange('textMuted', e.target.value)}
-                        className="flex-1 bg-[#40444b] border-[#202225] text-white uppercase font-mono text-xs"
+                        className="flex-1 uppercase font-mono text-xs"
+                        style={{
+                          backgroundColor: theme.bgSecondary,
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Border Color */}
                   <div className="space-y-2">
-                    <label className="text-xs text-gray-400">Border Color</label>
+                    <label 
+                      className="text-xs"
+                      style={{ color: theme.textMuted }}
+                    >
+                      Border Color
+                    </label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={settings.customTheme.border}
                         onChange={(e) => handleColorChange('border', e.target.value)}
-                        className="w-16 h-10 rounded cursor-pointer border-2 border-[#202225]"
+                        className="w-16 h-10 rounded cursor-pointer border-2"
+                        style={{ borderColor: theme.border }}
                       />
                       <Input
                         type="text"
                         value={settings.customTheme.border}
                         onChange={(e) => handleColorChange('border', e.target.value)}
-                        className="flex-1 bg-[#40444b] border-[#202225] text-white uppercase font-mono text-xs"
+                        className="flex-1 uppercase font-mono text-xs"
+                        style={{
+                          backgroundColor: theme.bgSecondary,
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
                       />
                     </div>
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-400 mt-4">
+                <p 
+                  className="text-xs mt-4"
+                  style={{ color: theme.textMuted }}
+                >
                   💡 <strong>Tip:</strong> Pick any preset theme and tweak individual colors, or create your own from scratch!
                 </p>
               </div>
@@ -572,8 +757,11 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
               {/* API Key Section */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Key className="w-4 h-4" style={{ color: settings.customTheme.accent }} />
-                  <label className="text-sm font-medium text-white">
+                  <Key className="w-4 h-4" style={{ color: theme.accent }} />
+                  <label 
+                    className="text-sm font-medium"
+                    style={{ color: theme.textPrimary }}
+                  >
                     OpenAI API Key (Optional)
                   </label>
                 </div>
@@ -582,16 +770,27 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                   value={settings.apiKey}
                   onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
                   placeholder="sk-proj-... (leave empty to use default)"
-                  className="bg-[#40444b] border-[#202225] text-white placeholder:text-gray-500"
+                  style={{
+                    backgroundColor: theme.bgSecondary,
+                    borderColor: theme.border,
+                    color: theme.textPrimary
+                  }}
+                  className="placeholder:opacity-50"
                 />
-                <p className="text-xs text-gray-400">
+                <p 
+                  className="text-xs"
+                  style={{ color: theme.textMuted }}
+                >
                   Leave empty to use the app's built-in API key. Enter your own key to use your OpenAI account instead.
                 </p>
               </div>
 
               {/* Model Section */}
               <div className="space-y-3">
-                <label className="text-sm font-medium text-white">
+                <label 
+                  className="text-sm font-medium"
+                  style={{ color: theme.textPrimary }}
+                >
                   AI Model
                 </label>
                 <Input
@@ -599,19 +798,33 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                   value={settings.model}
                   onChange={(e) => setSettings({ ...settings, model: e.target.value })}
                   placeholder="gpt-5-nano"
-                  className="bg-[#40444b] border-[#202225] text-white placeholder:text-gray-500"
+                  style={{
+                    backgroundColor: theme.bgSecondary,
+                    borderColor: theme.border,
+                    color: theme.textPrimary
+                  }}
+                  className="placeholder:opacity-50"
                 />
-                <p className="text-xs text-gray-400">
+                <p 
+                  className="text-xs"
+                  style={{ color: theme.textMuted }}
+                >
                   Recommended: gpt-5-nano, gpt-4o-mini, or gpt-4o
                 </p>
               </div>
 
               {/* Info Box */}
-              <div className="border rounded p-3" style={{ 
-                backgroundColor: settings.customTheme.accent + '10',
-                borderColor: settings.customTheme.accent + '30'
-              }}>
-                <p className="text-xs text-gray-300">
+              <div 
+                className="border rounded p-3" 
+                style={{ 
+                  backgroundColor: theme.accent + '10',
+                  borderColor: theme.accent + '30'
+                }}
+              >
+                <p 
+                  className="text-xs"
+                  style={{ color: theme.textSecondary }}
+                >
                   <strong>Note:</strong> If you provide your own API key, you'll be charged by OpenAI based on your usage. The app includes a default key that works out of the box.
                 </p>
               </div>
@@ -620,8 +833,17 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
           {/* Success Message */}
           {saved && (
-            <div className="mt-6 bg-green-500/10 border border-green-500/20 rounded p-3">
-              <p className="text-sm text-green-300 text-center">
+            <div 
+              className="mt-6 border rounded p-3"
+              style={{
+                backgroundColor: '#10b981' + '10',
+                borderColor: '#10b981' + '30'
+              }}
+            >
+              <p 
+                className="text-sm text-center"
+                style={{ color: '#10b981' }}
+              >
                 ✓ Settings saved successfully!
               </p>
             </div>
@@ -629,12 +851,21 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t border-[#202225] bg-[#2f3136]">
+        <div 
+          className="flex items-center justify-end gap-3 p-4 border-t"
+          style={{ 
+            borderColor: theme.border,
+            backgroundColor: theme.bgSecondary 
+          }}
+        >
           {activeTab === 'ai' && (
             <Button
               onClick={handleClear}
               variant="ghost"
-              className="text-gray-400 hover:text-white"
+              className="transition-colors"
+              style={{ color: theme.textMuted }}
+              onMouseEnter={(e) => e.target.style.color = theme.textPrimary}
+              onMouseLeave={(e) => e.target.style.color = theme.textMuted}
             >
               Clear AI Settings
             </Button>
@@ -642,14 +873,17 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
           <Button
             onClick={onClose}
             variant="ghost"
-            className="text-gray-400 hover:text-white"
+            className="transition-colors"
+            style={{ color: theme.textMuted }}
+            onMouseEnter={(e) => e.target.style.color = theme.textPrimary}
+            onMouseLeave={(e) => e.target.style.color = theme.textMuted}
           >
             Cancel
           </Button>
           <Button
             onClick={handleSave}
             className="text-white transition-all hover:opacity-90"
-            style={{ backgroundColor: settings.customTheme.accent }}
+            style={{ backgroundColor: theme.accent }}
           >
             <Save className="w-4 h-4 mr-2" />
             Save Settings
