@@ -10,6 +10,8 @@ const defaultSettings = {
   apiKey: '', // User's custom API key (empty = use embedded key)
   model: 'gpt-5-nano',
   theme: 'dark',
+  themeColor: '#ef4444', // Light mode primary color (Red by default)
+  themeColorDark: '#dc2626', // Dark mode primary color (Darker Red by default)
 };
 
 /**

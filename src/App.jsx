@@ -6,6 +6,72 @@ import { NoteEditor } from '@/components/NoteEditor';
 import { ClipboardPage } from '@/components/ClipboardPage';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { db } from '@/lib/localDb';
+import { loadSettings } from '@/lib/settings';
+
+// Helper function to convert hex to HSL
+function hexToHSL(hex) {
+  // Remove # if present
+  hex = hex.replace('#', '');
+  
+  // Convert to RGB
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  
+  h = Math.round(h * 360);
+  s = Math.round(s * 100);
+  l = Math.round(l * 100);
+  
+  return `${h} ${s}% ${l}%`;
+}
+
+// Apply theme colors to CSS variables
+function applyThemeColors(lightColor, darkColor) {
+  const root = document.documentElement;
+  const isDark = root.classList.contains('dark');
+  
+  // Convert colors to HSL for CSS variables
+  const lightHSL = hexToHSL(lightColor);
+  const darkHSL = hexToHSL(darkColor);
+  
+  // Apply to light mode variables
+  root.style.setProperty('--primary-light', lightHSL);
+  root.style.setProperty('--ring-light', lightHSL);
+  root.style.setProperty('--app-accent-light', lightColor);
+  
+  // Apply to dark mode variables
+  root.style.setProperty('--primary-dark', darkHSL);
+  root.style.setProperty('--ring-dark', darkHSL);
+  root.style.setProperty('--app-accent-dark', darkColor);
+  
+  // Update current theme
+  if (isDark) {
+    root.style.setProperty('--primary', darkHSL);
+    root.style.setProperty('--ring', darkHSL);
+    root.style.setProperty('--app-accent', darkColor);
+  } else {
+    root.style.setProperty('--primary', lightHSL);
+    root.style.setProperty('--ring', lightHSL);
+    root.style.setProperty('--app-accent', lightColor);
+  }
+}
 
 function App() {
   const [currentView, setCurrentView] = useState('notes'); // 'notes' or 'clipboard'
@@ -22,6 +88,14 @@ function App() {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
 
+  // Load theme colors from settings on mount
+  useEffect(() => {
+    const settings = loadSettings();
+    if (settings.themeColor && settings.themeColorDark) {
+      applyThemeColors(settings.themeColor, settings.themeColorDark);
+    }
+  }, []);
+
   // Apply theme on mount and when it changes
   useEffect(() => {
     if (theme === 'dark') {
@@ -29,10 +103,20 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+    
+    // Reapply theme colors when switching light/dark mode
+    const settings = loadSettings();
+    if (settings.themeColor && settings.themeColorDark) {
+      applyThemeColors(settings.themeColor, settings.themeColorDark);
+    }
   }, [theme]);
 
   const handleThemeToggle = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
+  const handleThemeChange = (lightColor, darkColor) => {
+    applyThemeColors(lightColor, darkColor);
   };
 
   // Load notes on mount
@@ -232,6 +316,7 @@ function App() {
       <SettingsDialog 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        onThemeChange={handleThemeChange}
       />
       
       {/* Version Display - Bottom Left */}
