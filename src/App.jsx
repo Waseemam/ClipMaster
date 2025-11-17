@@ -42,34 +42,34 @@ function hexToHSL(hex) {
   return `${h} ${s}% ${l}%`;
 }
 
-// Apply theme colors to CSS variables
-function applyThemeColors(lightColor, darkColor) {
+// Apply full theme colors to CSS variables
+function applyThemeColors(themeColors, mode) {
   const root = document.documentElement;
-  const isDark = root.classList.contains('dark');
   
-  // Convert colors to HSL for CSS variables
-  const lightHSL = hexToHSL(lightColor);
-  const darkHSL = hexToHSL(darkColor);
+  // Convert accent color to HSL for primary/ring variables
+  const accentHSL = hexToHSL(themeColors.accent);
   
-  // Apply to light mode variables
-  root.style.setProperty('--primary-light', lightHSL);
-  root.style.setProperty('--ring-light', lightHSL);
-  root.style.setProperty('--app-accent-light', lightColor);
+  // Apply all custom colors
+  root.style.setProperty('--app-bg-primary', themeColors.bgPrimary);
+  root.style.setProperty('--app-bg-secondary', themeColors.bgSecondary);
+  root.style.setProperty('--app-bg-tertiary', themeColors.bgTertiary);
+  root.style.setProperty('--app-text-primary', themeColors.textPrimary);
+  root.style.setProperty('--app-text-secondary', themeColors.textSecondary);
+  root.style.setProperty('--app-text-muted', themeColors.textMuted);
+  root.style.setProperty('--app-accent', themeColors.accent);
+  root.style.setProperty('--app-accent-hover', themeColors.accent);
+  root.style.setProperty('--border', hexToHSL(themeColors.border));
   
-  // Apply to dark mode variables
-  root.style.setProperty('--primary-dark', darkHSL);
-  root.style.setProperty('--ring-dark', darkHSL);
-  root.style.setProperty('--app-accent-dark', darkColor);
+  // Set primary and ring for buttons/accents
+  root.style.setProperty('--primary', accentHSL);
+  root.style.setProperty('--ring', accentHSL);
+  root.style.setProperty('--primary-foreground', '0 0% 100%');
   
-  // Update current theme
-  if (isDark) {
-    root.style.setProperty('--primary', darkHSL);
-    root.style.setProperty('--ring', darkHSL);
-    root.style.setProperty('--app-accent', darkColor);
+  // Apply light/dark mode
+  if (mode === 'dark') {
+    root.classList.add('dark');
   } else {
-    root.style.setProperty('--primary', lightHSL);
-    root.style.setProperty('--ring', lightHSL);
-    root.style.setProperty('--app-accent', lightColor);
+    root.classList.remove('dark');
   }
 }
 
@@ -88,35 +88,29 @@ function App() {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
 
-  // Load theme colors from settings on mount
+  // Load and apply theme from settings on mount
   useEffect(() => {
     const settings = loadSettings();
-    if (settings.themeColor && settings.themeColorDark) {
-      applyThemeColors(settings.themeColor, settings.themeColorDark);
+    if (settings.customTheme && settings.themeMode) {
+      applyThemeColors(settings.customTheme, settings.themeMode);
+      setTheme(settings.themeMode);
     }
   }, []);
 
-  // Apply theme on mount and when it changes
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
-    // Reapply theme colors when switching light/dark mode
-    const settings = loadSettings();
-    if (settings.themeColor && settings.themeColorDark) {
-      applyThemeColors(settings.themeColor, settings.themeColorDark);
-    }
-  }, [theme]);
-
   const handleThemeToggle = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    const newMode = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newMode);
+    
+    // Apply the theme with new mode
+    const settings = loadSettings();
+    if (settings.customTheme) {
+      applyThemeColors(settings.customTheme, newMode);
+    }
   };
 
-  const handleThemeChange = (lightColor, darkColor) => {
-    applyThemeColors(lightColor, darkColor);
+  const handleThemeChange = (themeColors, mode) => {
+    applyThemeColors(themeColors, mode);
+    setTheme(mode);
   };
 
   // Load notes on mount

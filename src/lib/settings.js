@@ -9,9 +9,17 @@ const SETTINGS_KEY = 'clipmaster_settings';
 const defaultSettings = {
   apiKey: '', // User's custom API key (empty = use embedded key)
   model: 'gpt-5-nano',
-  theme: 'dark',
-  themeColor: '#ef4444', // Light mode primary color (Red by default)
-  themeColorDark: '#dc2626', // Dark mode primary color (Darker Red by default)
+  themeMode: 'dark', // 'dark' or 'light'
+  customTheme: {
+    bgPrimary: '#36393f',      // Darkest/Lightest background
+    bgSecondary: '#2f3136',    // Main content background
+    bgTertiary: '#202225',     // Sidebar/darker sections
+    textPrimary: '#dcddde',    // Primary text
+    textSecondary: '#b9bbbe',  // Secondary text
+    textMuted: '#72767d',      // Muted text
+    accent: '#ef4444',         // Accent/primary color
+    border: '#202225',         // Border color
+  }
 };
 
 /**
