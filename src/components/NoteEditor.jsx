@@ -45,7 +45,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
       if (viewMode === 'split') {
         // In split view, adjust the active side
         const setterFunc = activeSplitSide === 'editor' ? setEditorFontSize : setPreviewFontSize;
-        
+
         if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
           e.preventDefault();
           setterFunc(prev => Math.min(prev + 2, 32));
@@ -74,11 +74,11 @@ export function NoteEditor({ note, onSave, onDelete }) {
     const handleWheel = (e) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        
+
         if (viewMode === 'split') {
           // In split view, adjust the active side
           const setterFunc = activeSplitSide === 'editor' ? setEditorFontSize : setPreviewFontSize;
-          
+
           if (e.deltaY < 0) {
             setterFunc(prev => Math.min(prev + 2, 32));
           } else if (e.deltaY > 0) {
@@ -111,6 +111,60 @@ export function NoteEditor({ note, onSave, onDelete }) {
   const handleContentChange = (e) => {
     setContent(e.target.value);
     setHasChanges(true);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) return;
+
+    // Insert placeholder or loading state if needed
+
+    for (const file of imageFiles) {
+      try {
+        // Check if we have the file path (Electron)
+        if (file.path) {
+          const result = await window.electronAPI.saveImage(file.path);
+          if (result.success) {
+            const imageMarkdown = `![${file.name}](local-resource://${result.filename})\n`;
+
+            // Insert at cursor position or append
+            const textarea = document.querySelector('textarea');
+            if (textarea) {
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              const newContent = content.substring(0, start) + imageMarkdown + content.substring(end);
+              setContent(newContent);
+              setHasChanges(true);
+
+              // Restore cursor position (approximate)
+              setTimeout(() => {
+                textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length;
+                textarea.focus();
+              }, 0);
+            } else {
+              setContent(prev => prev + '\n' + imageMarkdown);
+              setHasChanges(true);
+            }
+          } else {
+            console.error('Failed to save image:', result.error);
+            setAiError('Failed to save image: ' + result.error);
+          }
+        }
+      } catch (error) {
+        console.error('Error handling dropped file:', error);
+        setAiError('Error handling dropped file');
+      }
+    }
   };
 
   const handleAddTag = (e) => {
@@ -152,10 +206,10 @@ export function NoteEditor({ note, onSave, onDelete }) {
       setAiError('No content to format');
       return;
     }
-    
+
     setAiLoading(true);
     setAiError('');
-    
+
     try {
       const result = await autoMarkdown(content);
       if (result.success) {
@@ -176,10 +230,10 @@ export function NoteEditor({ note, onSave, onDelete }) {
       setAiError('No content to summarize');
       return;
     }
-    
+
     setAiLoading(true);
     setAiError('');
-    
+
     try {
       const result = await summarizeText(content);
       if (result.success) {
@@ -200,10 +254,10 @@ export function NoteEditor({ note, onSave, onDelete }) {
       setAiError('No content to fix');
       return;
     }
-    
+
     setAiLoading(true);
     setAiError('');
-    
+
     try {
       const result = await fixAndClearText(content);
       if (result.success) {
@@ -224,10 +278,10 @@ export function NoteEditor({ note, onSave, onDelete }) {
       setAiError('No content to analyze');
       return;
     }
-    
+
     setAiLoading(true);
     setAiError('');
-    
+
     try {
       const result = await autoTitleAndTags(content);
       if (result.success) {
@@ -417,7 +471,11 @@ export function NoteEditor({ note, onSave, onDelete }) {
       {/* Content Editor/Preview */}
       <div className="flex-1 overflow-hidden flex">
         {viewMode === 'edit' && (
-          <div className="flex-1 px-8 py-6 overflow-auto">
+          <div
+            className="flex-1 px-8 py-6 overflow-auto"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
             <Textarea
               placeholder="Start writing your note... (Supports Markdown)"
               value={content}
@@ -432,7 +490,15 @@ export function NoteEditor({ note, onSave, onDelete }) {
           <div className="flex-1 px-8 py-6 overflow-auto">
             <div className="prose prose-slate dark:prose-invert max-w-none" style={{ fontSize: `${fontSize}px` }}>
               {content ? (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  urlTransform={(url) => {
+                    if (url.startsWith('local-resource://')) {
+                      return url;
+                    }
+                    return url;
+                  }}
+                >
                   {content}
                 </ReactMarkdown>
               ) : (
@@ -445,7 +511,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
         {viewMode === 'split' && (
           <>
             {/* Editor Side */}
-            <div 
+            <div
               className="flex-1 border-r border-border/50 overflow-hidden flex flex-col"
               onMouseEnter={() => setActiveSplitSide('editor')}
             >
@@ -464,9 +530,9 @@ export function NoteEditor({ note, onSave, onDelete }) {
                 />
               </div>
             </div>
-            
+
             {/* Preview Side */}
-            <div 
+            <div
               className="flex-1 overflow-hidden flex flex-col"
               onMouseEnter={() => setActiveSplitSide('preview')}
             >
@@ -478,7 +544,15 @@ export function NoteEditor({ note, onSave, onDelete }) {
               <div className="flex-1 px-6 py-4 overflow-auto">
                 <div className="prose prose-slate dark:prose-invert max-w-none prose-sm" style={{ fontSize: `${previewFontSize}px` }}>
                   {content ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      urlTransform={(url) => {
+                        if (url.startsWith('local-resource://')) {
+                          return url;
+                        }
+                        return url;
+                      }}
+                    >
                       {content}
                     </ReactMarkdown>
                   ) : (

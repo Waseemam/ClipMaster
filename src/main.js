@@ -1,6 +1,8 @@
-import { app, BrowserWindow, ipcMain, clipboard, Menu, Tray, nativeImage } from 'electron';
+import { app, BrowserWindow, ipcMain, clipboard, Menu, Tray, nativeImage, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import path from 'path';
+import path from 'path';
+import fs from 'fs';
 import JsonDatabase from './lib/jsonDb.js';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -35,16 +37,16 @@ const createTray = () => {
     // Production mode - icon is in extraResources/build/
     iconPath = path.join(process.resourcesPath, 'build', 'icon.png');
   }
-  
+
   // Create icon from path and resize for system tray
   const icon = nativeImage.createFromPath(iconPath);
-  
+
   // For Windows system tray, create a 16x16 icon
   const trayIcon = icon.resize({ width: 16, height: 16, quality: 'best' });
-  
+
   tray = new Tray(trayIcon);
   tray.setToolTip('ClipMaster - Quick Notes & Clipboard Manager');
-  
+
   // Create context menu for tray
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -90,9 +92,9 @@ const createTray = () => {
       }
     }
   ]);
-  
+
   tray.setContextMenu(contextMenu);
-  
+
   // Double click to show/hide window
   tray.on('double-click', () => {
     if (mainWindow) {
@@ -169,7 +171,7 @@ const createWindow = () => {
     clipboardInterval = setInterval(() => {
       const text = clipboard.readText();
       const image = clipboard.readImage();
-      
+
       // Check for text first (higher priority)
       if (text && text !== lastClipboardText && text.length > 0) {
         lastClipboardText = text;
@@ -179,7 +181,7 @@ const createWindow = () => {
           content: text,
           timestamp: new Date().toISOString(),
         });
-      } 
+      }
       // Only check for images if there's no text or text hasn't changed
       else if (!image.isEmpty() && !text) {
         const imageData = image.toDataURL();
@@ -221,7 +223,7 @@ const createWindow = () => {
   });
 
   // ==================== DATABASE IPC HANDLERS ====================
-  
+
   // Notes
   ipcMain.handle('db:getNotes', async (event, params) => {
     try {
@@ -356,6 +358,35 @@ const createWindow = () => {
       return { success: false, error: error.message };
     }
   });
+
+  // ==================== IMAGE HANDLING ====================
+
+  ipcMain.handle('save-image', async (event, filePath) => {
+    try {
+      const userDataPath = app.getPath('userData');
+      const imagesDir = path.join(userDataPath, 'images');
+
+      // Create images directory if it doesn't exist
+      if (!fs.existsSync(imagesDir)) {
+        fs.mkdirSync(imagesDir, { recursive: true });
+      }
+
+      // Generate unique filename
+      const ext = path.extname(filePath);
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 10000);
+      const filename = `img_${timestamp}_${random}${ext}`;
+      const destPath = path.join(imagesDir, filename);
+
+      // Copy file
+      fs.copyFileSync(filePath, destPath);
+
+      return { success: true, filename };
+    } catch (error) {
+      console.error('Save image error:', error);
+      return { success: false, error: error.message };
+    }
+  });
 };
 
 // ==================== AUTO-UPDATER ====================
@@ -366,9 +397,9 @@ const logToRenderer = (message, data = null) => {
   if (mainWindow && mainWindow.webContents) {
     const safeMessage = message.replace(/'/g, "\\'").replace(/\n/g, '\\n');
     if (data) {
-      mainWindow.webContents.executeJavaScript(`console.log('${safeMessage}', ${JSON.stringify(data)})`).catch(() => {});
+      mainWindow.webContents.executeJavaScript(`console.log('${safeMessage}', ${JSON.stringify(data)})`).catch(() => { });
     } else {
-      mainWindow.webContents.executeJavaScript(`console.log('${safeMessage}')`).catch(() => {});
+      mainWindow.webContents.executeJavaScript(`console.log('${safeMessage}')`).catch(() => { });
     }
   }
 };
@@ -384,7 +415,7 @@ autoUpdater.on('update-available', (info) => {
   if (mainWindow) {
     mainWindow.webContents.send('update-available', info.version);
   }
-  
+
   // Show notification in tray
   if (tray) {
     tray.setToolTip(`ClipMaster - Update ${info.version} available!`);
@@ -414,7 +445,7 @@ autoUpdater.on('update-downloaded', (info) => {
   if (mainWindow) {
     mainWindow.webContents.send('update-downloaded', info.version);
   }
-  
+
   // Show notification in tray
   if (tray) {
     tray.setToolTip('ClipMaster - Update ready to install!');
@@ -434,6 +465,29 @@ ipcMain.on('install-update', () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
+  // Register custom protocol for local resources
+  protocol.registerFileProtocol('local-resource', (request, callback) => {
+    const url = request.url.replace('local-resource://', '');
+    const decodedUrl = decodeURI(url); // Decode URL to handle spaces and special characters
+    try {
+      // The path should be relative to the images directory in userData
+      const userDataPath = app.getPath('userData');
+      const imagesDir = path.join(userDataPath, 'images');
+      const filePath = path.join(imagesDir, decodedUrl);
+
+      // Ensure we are not traversing out of the images directory (basic security)
+      if (!filePath.startsWith(imagesDir)) {
+        console.error('Access denied:', filePath);
+        return callback({ error: -2 }); // FAILED
+      }
+
+      return callback(filePath);
+    } catch (error) {
+      console.error('Protocol error:', error);
+      return callback({ error: -2 });
+    }
+  });
+
   // Initialize database
   try {
     db = new JsonDatabase();
@@ -495,7 +549,7 @@ app.on('before-quit', () => {
     db.close();
     console.log('Database connection closed');
   }
-  
+
   // Destroy tray icon
   if (tray) {
     tray.destroy();
