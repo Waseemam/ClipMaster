@@ -79,5 +79,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     console.log('[PRELOAD] saveImage called with:', filePath);
     return ipcRenderer.invoke('save-image', filePath);
   },
+  saveImageFromClipboard: (base64Data) => {
+    console.log('[PRELOAD] saveImageFromClipboard called');
+    return ipcRenderer.invoke('save-image-from-clipboard', base64Data);
+  },
   cleanupImages: () => ipcRenderer.invoke('cleanup-images'),
+
+  // Context Menu API
+  installContextMenu: () => ipcRenderer.invoke('install-context-menu'),
+  uninstallContextMenu: () => ipcRenderer.invoke('uninstall-context-menu'),
 });

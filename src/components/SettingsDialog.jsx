@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Key, Sparkles, Save, Palette, Paintbrush, RotateCcw, HardDrive, Trash2 } from 'lucide-react';
+import { X, Key, Sparkles, Save, Palette, Paintbrush, RotateCcw, HardDrive, Trash2, Monitor, Plus, Minus } from 'lucide-react';
 import { loadSettings, saveSettings } from '@/lib/settings';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -193,7 +193,9 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
     }
   });
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState('theme'); // 'theme' or 'ai'
+  const [activeTab, setActiveTab] = useState('theme');
+  const [contextMenuStatus, setContextMenuStatus] = useState('checking');
+  const [contextMenuMessage, setContextMenuMessage] = useState(''); // 'theme' or 'ai'
 
   useEffect(() => {
     if (isOpen) {
@@ -373,6 +375,27 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
           >
             <HardDrive className="w-4 h-4 inline mr-2" />
             Storage
+          </button>
+          <button
+            onClick={() => setActiveTab('system')}
+            className="flex-1 px-4 py-3 text-sm font-medium transition-all border-b-2"
+            style={{
+              color: activeTab === 'system' ? theme.textPrimary : theme.textSecondary,
+              borderBottomColor: activeTab === 'system' ? theme.accent : 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'system') {
+                e.target.style.color = theme.textPrimary;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'system') {
+                e.target.style.color = theme.textSecondary;
+              }
+            }}
+          >
+            <Monitor className="w-4 h-4 inline mr-2" />
+            System
           </button>
         </div>
 
@@ -918,6 +941,120 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                       <Trash2 className="w-4 h-4 mr-2" />
                       Clean Now
                     </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* System Tab */}
+          {activeTab === 'system' && (
+            <div className="space-y-6">
+              <div>
+                <h3
+                  className="text-base font-semibold mb-4"
+                  style={{ color: theme.textPrimary }}
+                >
+                  Windows Integration
+                </h3>
+
+                {/* Context Menu Integration */}
+                <div
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: theme.bgSecondary,
+                    borderColor: theme.border
+                  }}
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <h4
+                        className="text-sm font-medium mb-1"
+                        style={{ color: theme.textPrimary }}
+                      >
+                        Right-Click Context Menu
+                      </h4>
+                      <p
+                        className="text-xs mb-3"
+                        style={{ color: theme.textMuted }}
+                      >
+                        Add "Create New Note in ClipMaster" to the Windows right-click context menu. Right-click anywhere in File Explorer to quickly create a new note.
+                      </p>
+                    </div>
+
+                    {contextMenuMessage && (
+                      <div
+                        className="p-3 rounded text-xs"
+                        style={{
+                          backgroundColor: contextMenuStatus === 'success' ? '#10b98120' : contextMenuStatus === 'error' ? '#ef444420' : theme.bgTertiary,
+                          color: contextMenuStatus === 'success' ? '#10b981' : contextMenuStatus === 'error' ? '#ef4444' : theme.textSecondary
+                        }}
+                      >
+                        {contextMenuMessage}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={async () => {
+                          try {
+                            setContextMenuMessage('Installing context menu...');
+                            setContextMenuStatus('checking');
+                            const result = await window.electronAPI.installContextMenu();
+                            if (result.success) {
+                              setContextMenuMessage('✓ Context menu installed successfully! Right-click in File Explorer to try it.');
+                              setContextMenuStatus('success');
+                            } else {
+                              setContextMenuMessage('Failed: ' + result.error);
+                              setContextMenuStatus('error');
+                            }
+                          } catch (error) {
+                            console.error('Install error:', error);
+                            setContextMenuMessage('Failed to install context menu');
+                            setContextMenuStatus('error');
+                          }
+                        }}
+                        variant="outline"
+                        size="sm"
+                        style={{
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Install Context Menu
+                      </Button>
+
+                      <Button
+                        onClick={async () => {
+                          try {
+                            setContextMenuMessage('Uninstalling context menu...');
+                            setContextMenuStatus('checking');
+                            const result = await window.electronAPI.uninstallContextMenu();
+                            if (result.success) {
+                              setContextMenuMessage('✓ Context menu uninstalled successfully.');
+                              setContextMenuStatus('success');
+                            } else {
+                              setContextMenuMessage('Failed: ' + result.error);
+                              setContextMenuStatus('error');
+                            }
+                          } catch (error) {
+                            console.error('Uninstall error:', error);
+                            setContextMenuMessage('Failed to uninstall context menu');
+                            setContextMenuStatus('error');
+                          }
+                        }}
+                        variant="outline"
+                        size="sm"
+                        style={{
+                          borderColor: theme.border,
+                          color: theme.textPrimary
+                        }}
+                      >
+                        <Minus className="w-4 h-4 mr-2" />
+                        Uninstall Context Menu
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

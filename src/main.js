@@ -26,6 +26,31 @@ autoUpdater.setFeedURL({
   repo: 'ClipMaster'
 });
 
+// ==================== SINGLE INSTANCE LOCK ====================
+// Ensure only one instance of the app runs at a time
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  // Another instance is already running, quit this one
+  app.quit();
+} else {
+  // This is the first instance, handle second-instance events
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, focus our window instead
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (!mainWindow.isVisible()) mainWindow.show();
+      mainWindow.focus();
+
+      // Check if --new-note flag was passed
+      if (commandLine.includes('--new-note')) {
+        // Send event to renderer to create a new note
+        mainWindow.webContents.send('context-menu-new-note');
+      }
+    }
+  });
+}
+
 const createTray = () => {
   // Create tray icon - use different paths for dev vs production
   let iconPath;
@@ -388,6 +413,43 @@ const createWindow = () => {
     }
   });
 
+  ipcMain.handle('save-image-from-clipboard', async (event, base64Data) => {
+    console.log('[MAIN] save-image-from-clipboard called');
+    try {
+      const userDataPath = app.getPath('userData');
+      const imagesDir = path.join(userDataPath, 'images');
+
+      // Create images directory if it doesn't exist
+      if (!fs.existsSync(imagesDir)) {
+        fs.mkdirSync(imagesDir, { recursive: true });
+      }
+
+      // Extract base64 data (remove data:image/png;base64, prefix)
+      const matches = base64Data.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (!matches) {
+        throw new Error('Invalid base64 image data');
+      }
+
+      const ext = matches[1]; // png, jpeg, etc.
+      const data = matches[2];
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 10000);
+      const filename = `img_${timestamp}_${random}.${ext}`;
+      const destPath = path.join(imagesDir, filename);
+
+      // Write base64 data to file
+      const buffer = Buffer.from(data, 'base64');
+      fs.writeFileSync(destPath, buffer);
+
+      return { success: true, filename };
+    } catch (error) {
+      console.error('Save clipboard image error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle('cleanup-images', async () => {
     console.log('[MAIN] cleanup-images called');
     try {
@@ -559,6 +621,14 @@ app.whenReady().then(async () => {
   createTray();
 
   createWindow();
+
+  // Check if app was launched with --new-note argument (first instance)
+  if (process.argv.includes('--new-note')) {
+    // Wait for window to be ready, then send event
+    mainWindow.webContents.once('did-finish-load', () => {
+      mainWindow.webContents.send('context-menu-new-note');
+    });
+  }
 
   // Check for updates after app is ready (wait 3 seconds)
   setTimeout(() => {

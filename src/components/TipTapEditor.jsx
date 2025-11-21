@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -27,12 +27,14 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Custom Image Node View with Free Positioning
+// Custom Image Node View with Draggable Positioning
 const ResizableImageNode = ({ node, updateAttributes, selected }) => {
-    const { src, alt, width, height, x, y } = node.attrs;
+    const { src, alt, width, height, marginLeft, marginTop } = node.attrs;
     const [isHovered, setIsHovered] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const containerRef = useRef(null);
 
     const onResizeStop = (e, direction, ref, d) => {
         updateAttributes({
@@ -41,77 +43,97 @@ const ResizableImageNode = ({ node, updateAttributes, selected }) => {
         });
     };
 
-    const handleMouseDown = (e) => {
+    const handleDragStart = (e) => {
+        // Only start drag if clicking on the image itself, not resize handles
         if (e.target.tagName === 'IMG') {
+            e.preventDefault();
+            e.stopPropagation();
             setIsDragging(true);
             setDragStart({
-                x: e.clientX - (x || 0),
-                y: e.clientY - (y || 0)
+                x: e.clientX,
+                y: e.clientY
             });
-            e.preventDefault();
+            setDragOffset({ x: 0, y: 0 });
         }
-    };
-
-    const handleMouseMove = (e) => {
-        if (isDragging) {
-            const newX = e.clientX - dragStart.x;
-            const newY = e.clientY - dragStart.y;
-            updateAttributes({ x: newX, y: newY });
-        }
-    };
-
-    const handleMouseUp = () => {
-        setIsDragging(false);
     };
 
     useEffect(() => {
-        if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            return () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-    }, [isDragging, dragStart]);
+        if (!isDragging) return;
+
+        const handleMouseMove = (e) => {
+            // Use CSS transform for smooth dragging without re-renders
+            const deltaX = e.clientX - dragStart.x;
+            const deltaY = e.clientY - dragStart.y;
+            setDragOffset({ x: deltaX, y: deltaY });
+        };
+
+        const handleMouseUp = (e) => {
+            // Only update attributes once at the end
+            const deltaX = e.clientX - dragStart.x;
+            const deltaY = e.clientY - dragStart.y;
+
+            updateAttributes({
+                marginLeft: (marginLeft || 0) + deltaX,
+                marginTop: (marginTop || 0) + deltaY
+            });
+
+            setIsDragging(false);
+            setDragOffset({ x: 0, y: 0 });
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, dragStart, marginLeft, marginTop, updateAttributes]);
 
     return (
-        <NodeViewWrapper className="relative inline-block">
+        <NodeViewWrapper className="inline-block my-4">
             <div
-                className={`absolute group transition-all ${selected ? 'ring-2 ring-blue-500' : ''} ${isDragging ? 'cursor-grabbing opacity-80' : 'cursor-grab'}`}
+                ref={containerRef}
+                className={`inline-block group transition-all ${selected ? 'ring-2 ring-blue-400' : ''} ${isDragging ? 'cursor-grabbing opacity-80' : 'cursor-grab'}`}
                 style={{
-                    left: `${x || 0}px`,
-                    top: `${y || 0}px`,
-                    zIndex: isDragging ? 1000 : 10
+                    marginLeft: `${marginLeft || 0}px`,
+                    marginTop: `${marginTop || 0}px`,
+                    transform: isDragging ? `translate(${dragOffset.x}px, ${dragOffset.y}px)` : 'none',
+                    position: 'relative',
+                    zIndex: isDragging ? 1000 : 1
                 }}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                onMouseDown={handleMouseDown}
+                onMouseDown={handleDragStart}
             >
                 <Resizable
-                    size={{ width: width || 'auto', height: height || 'auto' }}
+                    size={{ width: width || 300, height: height || 'auto' }}
                     onResizeStop={onResizeStop}
                     enable={{
-                        top: true, right: true, bottom: true, left: true,
+                        top: false, right: false, bottom: false, left: false,
                         topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
                     }}
                     className="relative"
                     handleClasses={{
-                        top: "hidden group-hover:block w-full h-2 absolute top-0 left-0 bg-blue-500/30 cursor-ns-resize z-20",
-                        right: "hidden group-hover:block w-2 h-full absolute top-0 right-0 bg-blue-500/30 cursor-ew-resize z-20",
-                        bottom: "hidden group-hover:block w-full h-2 absolute bottom-0 left-0 bg-blue-500/30 cursor-ns-resize z-20",
-                        left: "hidden group-hover:block w-2 h-full absolute top-0 left-0 bg-blue-500/30 cursor-ew-resize z-20",
-                        topRight: "hidden group-hover:block w-3 h-3 absolute top-0 right-0 bg-blue-500 cursor-nesw-resize z-30 rounded-bl",
-                        bottomRight: "hidden group-hover:block w-3 h-3 absolute bottom-0 right-0 bg-blue-500 cursor-nwse-resize z-30 rounded-tl",
-                        bottomLeft: "hidden group-hover:block w-3 h-3 absolute bottom-0 left-0 bg-blue-500 cursor-nesw-resize z-30 rounded-tr",
-                        topLeft: "hidden group-hover:block w-3 h-3 absolute top-0 left-0 bg-blue-500 cursor-nwse-resize z-30 rounded-br"
+                        topRight: "opacity-0 group-hover:opacity-100 w-2 h-2 absolute -top-1 -right-1 bg-blue-500 cursor-nesw-resize z-30 rounded-full border-2 border-white shadow-md transition-opacity",
+                        bottomRight: "opacity-0 group-hover:opacity-100 w-2 h-2 absolute -bottom-1 -right-1 bg-blue-500 cursor-nwse-resize z-30 rounded-full border-2 border-white shadow-md transition-opacity",
+                        bottomLeft: "opacity-0 group-hover:opacity-100 w-2 h-2 absolute -bottom-1 -left-1 bg-blue-500 cursor-nesw-resize z-30 rounded-full border-2 border-white shadow-md transition-opacity",
+                        topLeft: "opacity-0 group-hover:opacity-100 w-2 h-2 absolute -top-1 -left-1 bg-blue-500 cursor-nwse-resize z-30 rounded-full border-2 border-white shadow-md transition-opacity"
                     }}
                 >
                     <img
                         src={src}
                         alt={alt}
                         className="block max-w-full h-auto rounded-md shadow-lg"
-                        style={{ width: '100%', height: '100%', pointerEvents: isDragging ? 'none' : 'auto' }}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            pointerEvents: isDragging ? 'none' : 'auto',
+                            userSelect: 'none',
+                            imageRendering: 'crisp-edges',
+                            filter: 'contrast(1.05) brightness(1.02)',
+                            WebkitFontSmoothing: 'antialiased'
+                        }}
                         draggable={false}
                     />
                 </Resizable>
@@ -120,7 +142,7 @@ const ResizableImageNode = ({ node, updateAttributes, selected }) => {
     );
 };
 
-// Custom Image Extension to support resizing and free positioning
+// Custom Image Extension to support resizing and draggable positioning
 const CustomImage = Image.extend({
     addAttributes() {
         return {
@@ -131,10 +153,10 @@ const CustomImage = Image.extend({
             height: {
                 default: null,
             },
-            x: {
+            marginLeft: {
                 default: 0,
             },
-            y: {
+            marginTop: {
                 default: 0,
             },
         };
@@ -401,11 +423,15 @@ export default function TipTapEditor({ content, onChange, onSave, onAiAction }) 
                     for (let i = 0; i < items.length; i++) {
                         if (items[i].type.indexOf('image') !== -1) {
                             event.preventDefault();
-                            const file = items[i].getAsFile();
-                            if (file) {
-                                const filePath = window.electronAPI.getPathForFile(file);
-                                if (filePath) {
-                                    window.electronAPI.saveImage(filePath).then((result) => {
+                            const blob = items[i].getAsFile();
+                            if (blob) {
+                                // Create a temporary file path for the blob
+                                const reader = new FileReader();
+                                reader.onload = async (e) => {
+                                    try {
+                                        // Convert blob to base64 and save
+                                        const base64Data = e.target.result;
+                                        const result = await window.electronAPI.saveImageFromClipboard(base64Data);
                                         if (result.success) {
                                             const { schema } = view.state;
                                             const { selection } = view.state;
@@ -413,8 +439,11 @@ export default function TipTapEditor({ content, onChange, onSave, onAiAction }) 
                                             const transaction = view.state.tr.insert(selection.from, node);
                                             view.dispatch(transaction);
                                         }
-                                    });
-                                }
+                                    } catch (error) {
+                                        console.error('Failed to paste image:', error);
+                                    }
+                                };
+                                reader.readAsDataURL(blob);
                             }
                             return true;
                         }

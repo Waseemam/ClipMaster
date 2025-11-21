@@ -1,0 +1,10 @@
+Windows Registry Editor Version 5.00
+
+; Add "Create New Note in ClipMaster" to the right-click context menu
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\ClipMaster]
+@="Create New Note in ClipMaster"
+"Icon"="C:\\Program Files\\ClipMaster\\ClipMaster.exe,0"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\ClipMaster\command]
+@="\"C:\\Program Files\\ClipMaster\\ClipMaster.exe\" --new-note"

@@ -1,0 +1,5 @@
+Windows Registry Editor Version 5.00
+
+; Remove "Create New Note in ClipMaster" from the right-click context menu
+
+[-HKEY_CLASSES_ROOT\Directory\Background\shell\ClipMaster]
