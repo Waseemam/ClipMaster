@@ -499,6 +499,63 @@ const createWindow = () => {
       return { success: false, error: error.message };
     }
   });
+
+  // ==================== CONTEXT MENU INTEGRATION ====================
+
+  ipcMain.handle('install-context-menu', async () => {
+    console.log('[MAIN] install-context-menu called');
+    try {
+      // Check if in development mode
+      if (process.env.VITE_DEV_SERVER_URL) {
+        return {
+          success: false,
+          error: 'Context menu installation is only available in production builds. Please build and install the app first.'
+        };
+      }
+
+      const { exec } = require('child_process');
+      const util = require('util');
+      const execPromise = util.promisify(exec);
+
+      // Get the app executable path
+      const exePath = app.getPath('exe').replace(/\\/g, '\\\\');
+
+      // Create registry commands
+      const commands = [
+        `reg add "HKEY_CURRENT_USER\\Software\\Classes\\Directory\\Background\\shell\\ClipMaster" /ve /d "Create New Note in ClipMaster" /f`,
+        `reg add "HKEY_CURRENT_USER\\Software\\Classes\\Directory\\Background\\shell\\ClipMaster" /v "Icon" /d "${exePath},0" /f`,
+        `reg add "HKEY_CURRENT_USER\\Software\\Classes\\Directory\\Background\\shell\\ClipMaster\\command" /ve /d "\\"${exePath}\\" --new-note" /f`
+      ];
+
+      // Execute registry commands
+      for (const cmd of commands) {
+        await execPromise(cmd);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Install context menu error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('uninstall-context-menu', async () => {
+    console.log('[MAIN] uninstall-context-menu called');
+    try {
+      const { exec } = require('child_process');
+      const util = require('util');
+      const execPromise = util.promisify(exec);
+
+      // Remove registry key
+      const cmd = `reg delete "HKEY_CURRENT_USER\\Software\\Classes\\Directory\\Background\\shell\\ClipMaster" /f`;
+      await execPromise(cmd);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Uninstall context menu error:', error);
+      return { success: false, error: error.message };
+    }
+  });
 };
 
 // ==================== AUTO-UPDATER ====================
