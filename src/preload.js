@@ -1,7 +1,7 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 // Expose window controls and clipboard to renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -74,5 +74,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // Image API
-  saveImage: (filePath) => ipcRenderer.invoke('save-image', filePath),
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+  saveImage: (filePath) => {
+    console.log('[PRELOAD] saveImage called with:', filePath);
+    return ipcRenderer.invoke('save-image', filePath);
+  },
+  cleanupImages: () => ipcRenderer.invoke('cleanup-images'),
 });

@@ -8,50 +8,53 @@
     /* Base backgrounds - Darker shades for containers */
     --background: 220 17% 97%;
     --foreground: 222 47% 11%;
-    
+
     /* Cards and containers - Slightly darker than background */
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-    
+
     /* Popovers */
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    
+
     /* Primary accent - Beautiful red */
     --primary: 0 84% 60%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Secondary - Subtle */
     --secondary: 220 14% 96%;
     --secondary-foreground: 222 47% 11%;
-    
+
     /* Muted backgrounds and text */
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
-    
+
     /* Accent for highlights */
     --accent: 220 14% 96%;
     --accent-foreground: 222 47% 11%;
-    
+
     /* Destructive/danger */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    
+
     /* Borders - Visible but subtle */
     --border: 220 13% 91%;
-    
+
     /* Input backgrounds - Lighter to stand out */
     --input: 0 0% 100%;
     --input-border: 220 13% 88%;
-    
+
     /* Focus ring */
     --ring: 0 84% 60%;
     --radius: 0.5rem;
 
     /* Custom app colors */
-    --app-bg-primary: #ffffff;      /* Main content - LIGHTEST */
-    --app-bg-secondary: #f7f8fa;    /* Container backgrounds */
-    --app-bg-tertiary: #ebedef;     /* Sidebar/darker sections */
+    --app-bg-primary: #ffffff;
+    /* Main content - LIGHTEST */
+    --app-bg-secondary: #f7f8fa;
+    /* Container backgrounds */
+    --app-bg-tertiary: #ebedef;
+    /* Sidebar/darker sections */
     --app-text-primary: #2e3338;
     --app-text-secondary: #5c6370;
     --app-text-muted: #8a8f98;
@@ -64,49 +67,52 @@
     /* Base backgrounds - Darker for containers */
     --background: 222 47% 11%;
     --foreground: 213 31% 91%;
-    
+
     /* Cards and containers */
     --card: 223 39% 15%;
     --card-foreground: 213 31% 91%;
-    
+
     /* Popovers */
     --popover: 223 39% 15%;
     --popover-foreground: 213 31% 91%;
-    
+
     /* Primary accent - Bright red for dark mode */
     --primary: 0 72% 51%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Secondary */
     --secondary: 222 47% 15%;
     --secondary-foreground: 213 31% 91%;
-    
+
     /* Muted backgrounds and text */
     --muted: 223 39% 18%;
     --muted-foreground: 215 20% 65%;
-    
+
     /* Accent for highlights */
     --accent: 223 39% 18%;
     --accent-foreground: 213 31% 91%;
-    
+
     /* Destructive/danger */
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 100%;
-    
+
     /* Borders - Subtle in dark mode */
     --border: 223 39% 22%;
-    
+
     /* Input backgrounds - Lighter than containers to stand out */
     --input: 223 39% 24%;
     --input-border: 223 39% 28%;
-    
+
     /* Focus ring */
     --ring: 0 72% 51%;
 
     /* Custom app colors for dark mode */
-    --app-bg-primary: #36393f;      /* Title bar - DARKEST */
-    --app-bg-secondary: #2f3136;    /* Main content - LIGHTER */
-    --app-bg-tertiary: #202225;     /* Sidebar - DARKER */
+    --app-bg-primary: #36393f;
+    /* Title bar - DARKEST */
+    --app-bg-secondary: #2f3136;
+    /* Main content - LIGHTER */
+    --app-bg-tertiary: #202225;
+    /* Sidebar - DARKER */
     --app-text-primary: #dcddde;
     --app-text-secondary: #b9bbbe;
     --app-text-muted: #72767d;
@@ -119,51 +125,27 @@
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground antialiased;
   }
-  
+
   /* Beautiful custom scrollbar */
   ::-webkit-scrollbar {
     width: 14px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background: hsl(var(--muted-foreground) / 0.3);
     border-radius: 8px;
     border: 4px solid transparent;
-    background-clip: content-box;
-    transition: background 0.2s ease;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.5);
-    background-clip: content-box;
-  }
-  
-  /* Input focus styles */
-  input:focus,
-  textarea:focus {
-    outline: none;
-  }
-  
-  /* Smooth transitions */
-  * {
-    transition-property: background-color, border-color, color;
-    transition-duration: 150ms;
-    transition-timing-function: ease-in-out;
-  }
-  
-  /* Markdown Preview Styles */
-  .prose {
     color: var(--app-text-primary);
   }
-  
+
   .prose h1,
   .prose h2,
   .prose h3,
@@ -173,51 +155,85 @@
     color: var(--app-text-primary);
     font-weight: 700;
   }
-  
+
   .prose a {
     color: var(--app-accent);
     text-decoration: underline;
   }
-  
+
   .prose a:hover {
     color: var(--app-accent-hover);
   }
-  
+
   .prose code {
     background-color: hsl(var(--muted));
     padding: 0.2em 0.4em;
     border-radius: 0.25rem;
     font-size: 0.875em;
   }
-  
+
   .prose pre {
     background-color: hsl(var(--muted));
     border: 1px solid hsl(var(--border));
   }
-  
+
   .prose pre code {
     background-color: transparent;
     padding: 0;
   }
-  
+
   .prose blockquote {
     border-left-color: var(--app-accent);
     color: var(--app-text-secondary);
   }
-  
+
   .prose strong {
     color: var(--app-text-primary);
   }
-  
+
   .prose table {
     border: 1px solid hsl(var(--border));
   }
-  
+
   .prose thead {
     background-color: hsl(var(--muted));
   }
-  
+
   .prose tbody tr {
     border-bottom: 1px solid hsl(var(--border));
+  }
+}
+
+/* Drag and Drop Visual Feedback */
+.ProseMirror.drag-over {
+  position: relative;
+}
+
+.ProseMirror.drag-over::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px dashed rgba(59, 130, 246, 0.5);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 999;
+  animation: pulse-border 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+
+  0%,
+  100% {
+    border-color: rgba(59, 130, 246, 0.5);
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  50% {
+    border-color: rgba(59, 130, 246, 0.8);
+    background: rgba(59, 130, 246, 0.15);
   }
 }

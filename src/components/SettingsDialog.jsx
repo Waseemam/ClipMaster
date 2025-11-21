@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Key, Sparkles, Save, Palette, Paintbrush, RotateCcw } from 'lucide-react';
+import { X, Key, Sparkles, Save, Palette, Paintbrush, RotateCcw, HardDrive, Trash2 } from 'lucide-react';
 import { loadSettings, saveSettings } from '@/lib/settings';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -205,12 +205,12 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
   const handleSave = () => {
     saveSettings(settings);
-    
+
     // Apply theme immediately
     if (onThemeChange) {
       onThemeChange(settings.customTheme, settings.themeMode);
     }
-    
+
     setSaved(true);
     setTimeout(() => {
       onClose();
@@ -232,7 +232,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
       customTheme: theme.colors,
     };
     setSettings(newSettings);
-    
+
     // Apply theme immediately for preview
     if (onThemeChange) {
       onThemeChange(theme.colors, theme.mode);
@@ -249,7 +249,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
       customTheme: newTheme,
     };
     setSettings(newSettings);
-    
+
     // Apply immediately for live preview
     if (onThemeChange) {
       onThemeChange(newTheme, settings.themeMode);
@@ -276,16 +276,16 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div 
+      <div
         className="rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col"
         style={{ backgroundColor: theme.bgPrimary }}
       >
         {/* Header */}
-        <div 
+        <div
           className="flex items-center justify-between p-4 border-b"
           style={{ borderColor: theme.border }}
         >
-          <h2 
+          <h2
             className="text-lg font-semibold flex items-center gap-2"
             style={{ color: theme.textPrimary }}
           >
@@ -304,11 +304,11 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
         </div>
 
         {/* Tabs */}
-        <div 
+        <div
           className="flex border-b"
-          style={{ 
+          style={{
             borderColor: theme.border,
-            backgroundColor: theme.bgSecondary 
+            backgroundColor: theme.bgSecondary
           }}
         >
           <button
@@ -353,6 +353,27 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
             <Sparkles className="w-4 h-4 inline mr-2" />
             AI Settings
           </button>
+          <button
+            onClick={() => setActiveTab('storage')}
+            className="flex-1 px-4 py-3 text-sm font-medium transition-all border-b-2"
+            style={{
+              color: activeTab === 'storage' ? theme.textPrimary : theme.textSecondary,
+              borderBottomColor: activeTab === 'storage' ? theme.accent : 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'storage') {
+                e.target.style.color = theme.textPrimary;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'storage') {
+                e.target.style.color = theme.textSecondary;
+              }
+            }}
+          >
+            <HardDrive className="w-4 h-4 inline mr-2" />
+            Storage
+          </button>
         </div>
 
         {/* Content - Scrollable */}
@@ -361,26 +382,26 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
           {activeTab === 'theme' && (
             <div className="space-y-6">
               {/* Mode Indicator */}
-              <div 
+              <div
                 className="flex items-center justify-between p-4 rounded-lg"
                 style={{ backgroundColor: theme.bgSecondary }}
               >
                 <div>
-                  <p 
+                  <p
                     className="text-sm font-medium"
                     style={{ color: theme.textPrimary }}
                   >
                     Current Mode
                   </p>
-                  <p 
+                  <p
                     className="text-xs"
                     style={{ color: theme.textMuted }}
                   >
                     Theme appearance
                   </p>
                 </div>
-                <div 
-                  className="px-4 py-2 rounded-lg font-medium text-white" 
+                <div
+                  className="px-4 py-2 rounded-lg font-medium text-white"
                   style={{ backgroundColor: theme.accent }}
                 >
                   {settings.themeMode === 'dark' ? '🌙 Dark' : '☀️ Light'}
@@ -392,7 +413,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Palette className="w-4 h-4" style={{ color: theme.accent }} />
-                    <label 
+                    <label
                       className="text-sm font-medium"
                       style={{ color: theme.textPrimary }}
                     >
@@ -418,7 +439,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                         key={presetTheme.name}
                         onClick={() => handlePresetTheme(presetTheme)}
                         className="relative p-3 rounded-lg border-2 transition-all hover:scale-105"
-                        style={{ 
+                        style={{
                           backgroundColor: presetTheme.colors.bgSecondary,
                           borderColor: isActive ? '#ffffff' : theme.border,
                           boxShadow: isActive ? '0 4px 6px rgba(0,0,0,0.1)' : 'none'
@@ -436,32 +457,32 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                       >
                         {/* Theme Preview */}
                         <div className="space-y-2 mb-2">
-                          <div 
+                          <div
                             className="h-8 rounded flex items-center justify-center text-xs font-medium"
-                            style={{ 
+                            style={{
                               backgroundColor: presetTheme.colors.accent,
                               color: '#ffffff'
                             }}
                           >
                             Button
                           </div>
-                          <div 
+                          <div
                             className="h-6 rounded"
                             style={{ backgroundColor: presetTheme.colors.bgPrimary }}
                           />
-                          <div 
+                          <div
                             className="h-4 rounded"
                             style={{ backgroundColor: presetTheme.colors.bgTertiary }}
                           />
                         </div>
-                        <p 
-                          className="text-xs font-medium text-center" 
+                        <p
+                          className="text-xs font-medium text-center"
                           style={{ color: presetTheme.colors.textPrimary }}
                         >
                           {presetTheme.name}
                         </p>
-                        <p 
-                          className="text-[10px] text-center mt-1" 
+                        <p
+                          className="text-[10px] text-center mt-1"
                           style={{ color: presetTheme.colors.textMuted }}
                         >
                           {presetTheme.mode === 'dark' ? '🌙' : '☀️'}
@@ -478,19 +499,19 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
               </div>
 
               {/* Custom Color Pickers */}
-              <div 
+              <div
                 className="space-y-4 pt-4 border-t"
                 style={{ borderColor: theme.border }}
               >
                 <div className="flex items-center gap-2">
                   <Paintbrush className="w-4 h-4" style={{ color: theme.accent }} />
-                  <label 
+                  <label
                     className="text-sm font-medium"
                     style={{ color: theme.textPrimary }}
                   >
                     Custom Colors
                   </label>
-                  <span 
+                  <span
                     className="text-xs"
                     style={{ color: theme.textMuted }}
                   >
@@ -502,7 +523,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Background Primary */}
                   <div className="space-y-2">
-                    <label 
+                    <label
                       className="text-xs"
                       style={{ color: theme.textMuted }}
                     >
@@ -532,7 +553,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
                   {/* Background Secondary */}
                   <div className="space-y-2">
-                    <label 
+                    <label
                       className="text-xs"
                       style={{ color: theme.textMuted }}
                     >
@@ -562,7 +583,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
                   {/* Background Tertiary */}
                   <div className="space-y-2">
-                    <label 
+                    <label
                       className="text-xs"
                       style={{ color: theme.textMuted }}
                     >
@@ -592,7 +613,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
                   {/* Accent Color */}
                   <div className="space-y-2">
-                    <label 
+                    <label
                       className="text-xs"
                       style={{ color: theme.textMuted }}
                     >
@@ -622,7 +643,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
                   {/* Text Primary */}
                   <div className="space-y-2">
-                    <label 
+                    <label
                       className="text-xs"
                       style={{ color: theme.textMuted }}
                     >
@@ -652,7 +673,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
                   {/* Text Secondary */}
                   <div className="space-y-2">
-                    <label 
+                    <label
                       className="text-xs"
                       style={{ color: theme.textMuted }}
                     >
@@ -682,7 +703,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
                   {/* Text Muted */}
                   <div className="space-y-2">
-                    <label 
+                    <label
                       className="text-xs"
                       style={{ color: theme.textMuted }}
                     >
@@ -712,7 +733,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
                   {/* Border Color */}
                   <div className="space-y-2">
-                    <label 
+                    <label
                       className="text-xs"
                       style={{ color: theme.textMuted }}
                     >
@@ -741,7 +762,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                   </div>
                 </div>
 
-                <p 
+                <p
                   className="text-xs mt-4"
                   style={{ color: theme.textMuted }}
                 >
@@ -758,7 +779,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Key className="w-4 h-4" style={{ color: theme.accent }} />
-                  <label 
+                  <label
                     className="text-sm font-medium"
                     style={{ color: theme.textPrimary }}
                   >
@@ -777,7 +798,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                   }}
                   className="placeholder:opacity-50"
                 />
-                <p 
+                <p
                   className="text-xs"
                   style={{ color: theme.textMuted }}
                 >
@@ -787,7 +808,7 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
 
               {/* Model Section */}
               <div className="space-y-3">
-                <label 
+                <label
                   className="text-sm font-medium"
                   style={{ color: theme.textPrimary }}
                 >
@@ -803,9 +824,14 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                     borderColor: theme.border,
                     color: theme.textPrimary
                   }}
-                  className="placeholder:opacity-50"
                 />
-                <p 
+                <p
+                  className="text-xs"
+                  style={{ color: theme.textMuted }}
+                >
+                  The AI model to use for processing notes.
+                </p>
+                <p
                   className="text-xs"
                   style={{ color: theme.textMuted }}
                 >
@@ -814,14 +840,14 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
               </div>
 
               {/* Info Box */}
-              <div 
-                className="border rounded p-3" 
-                style={{ 
+              <div
+                className="border rounded p-3"
+                style={{
                   backgroundColor: theme.accent + '10',
                   borderColor: theme.accent + '30'
                 }}
               >
-                <p 
+                <p
                   className="text-xs"
                   style={{ color: theme.textSecondary }}
                 >
@@ -831,16 +857,83 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
             </div>
           )}
 
+          {/* Storage Tab */}
+          {activeTab === 'storage' && (
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <HardDrive className="w-5 h-5" style={{ color: theme.accent }} />
+                  <h3
+                    className="text-lg font-medium"
+                    style={{ color: theme.textPrimary }}
+                  >
+                    Storage Management
+                  </h3>
+                </div>
+
+                <div
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: theme.bgSecondary,
+                    borderColor: theme.border
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h4
+                        className="text-sm font-medium mb-1"
+                        style={{ color: theme.textPrimary }}
+                      >
+                        Clean Unused Images
+                      </h4>
+                      <p
+                        className="text-xs"
+                        style={{ color: theme.textMuted }}
+                      >
+                        Scan all notes and delete images that are no longer referenced. This helps free up disk space.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const result = await window.electronAPI.cleanupImages();
+                          if (result.success) {
+                            alert(`Cleanup complete! Deleted ${result.count} unused images.`);
+                          } else {
+                            alert('Cleanup failed: ' + result.error);
+                          }
+                        } catch (error) {
+                          console.error('Cleanup error:', error);
+                          alert('Failed to run cleanup');
+                        }
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      style={{
+                        borderColor: theme.border,
+                        color: theme.textPrimary
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Clean Now
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Success Message */}
           {saved && (
-            <div 
+            <div
               className="mt-6 border rounded p-3"
               style={{
                 backgroundColor: '#10b981' + '10',
                 borderColor: '#10b981' + '30'
               }}
             >
-              <p 
+              <p
                 className="text-sm text-center"
                 style={{ color: '#10b981' }}
               >
@@ -851,11 +944,11 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
         </div>
 
         {/* Footer */}
-        <div 
+        <div
           className="flex items-center justify-end gap-3 p-4 border-t"
-          style={{ 
+          style={{
             borderColor: theme.border,
-            backgroundColor: theme.bgSecondary 
+            backgroundColor: theme.bgSecondary
           }}
         >
           {activeTab === 'ai' && (

@@ -84,7 +84,7 @@ export async function fixAndClearText(text) {
       model: getModel(),
       messages: [{
         role: "system",
-        content: "You are a text editor. Fix grammar, spelling, and punctuation errors. Improve clarity and readability while maintaining the original meaning and tone. Keep the same structure and don't change the content significantly."
+        content: "You are a text editor. Fix grammar, spelling, and punctuation errors. Improve clarity and readability while maintaining the original meaning and tone. The input will be HTML. You MUST preserve all HTML tags, attributes, and structure exactly as they are. Only edit the text content within the tags. Do not add or remove tags."
       }, {
         role: "user",
         content: text
@@ -106,7 +106,39 @@ export async function fixAndClearText(text) {
 }
 
 /**
- * Function 4: Generate Clipboard Title
+ * Function 4: Auto Format HTML
+ * Restructures HTML content with proper headings, lists, and formatting
+ */
+export async function autoFormatHTML(html) {
+  try {
+    const openai = getOpenAIClient();
+    const response = await openai.chat.completions.create({
+      model: getModel(),
+      messages: [{
+        role: "system",
+        content: "You are an HTML formatter. Restructure the given HTML content to be well-organized with proper headings (h1, h2, h3), lists (ul, ol), and emphasis (strong, em) where appropriate. Improve the document structure and readability while keeping the original meaning intact. You MUST preserve all existing HTML tags, attributes, and structure. Only reorganize and add formatting tags where they improve clarity. Return valid HTML."
+      }, {
+        role: "user",
+        content: html
+      }],
+      max_tokens: 2000,
+      temperature: 0.3
+    });
+    return {
+      success: true,
+      text: response.choices[0].message.content
+    };
+  } catch (error) {
+    console.error('Auto Format HTML Error:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to format HTML'
+    };
+  }
+}
+
+/**
+ * Function 5: Generate Clipboard Title
  * Creates a short, descriptive title for clipboard content
  */
 export async function generateClipboardTitle(text) {
@@ -132,7 +164,7 @@ export async function generateClipboardTitle(text) {
       max_tokens: 30,
       temperature: 0.3
     });
-    
+
     return {
       success: true,
       title: response.choices[0].message.content.trim().replace(/^["']|["']$/g, '') // Remove quotes if present
@@ -149,7 +181,7 @@ export async function generateClipboardTitle(text) {
 }
 
 /**
- * Function 5: Auto Title and Tagging
+ * Function 6: Auto Title and Tagging
  * Generates a title and relevant tags for the content
  */
 export async function autoTitleAndTags(text) {
@@ -168,7 +200,7 @@ export async function autoTitleAndTags(text) {
       temperature: 0.3,
       response_format: { type: "json_object" }
     });
-    
+
     const result = JSON.parse(response.choices[0].message.content);
     return {
       success: true,

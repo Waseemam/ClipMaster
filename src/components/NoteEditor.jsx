@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Save, Trash2, Plus, X, Wand2, FileText, Sparkles, Tag, Eye, Edit } from 'lucide-react';
-import { autoMarkdown, summarizeText, fixAndClearText, autoTitleAndTags } from '@/lib/ai';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Save, Trash2, X, Wand2, FileText, Sparkles, Tag } from 'lucide-react';
+import { autoMarkdown, summarizeText, fixAndClearText, autoTitleAndTags, autoFormatHTML } from '@/lib/ai';
+import TipTapEditor from './TipTapEditor';
+
+import { marked } from 'marked';
 
 export function NoteEditor({ note, onSave, onDelete }) {
   const [title, setTitle] = useState('');
@@ -18,16 +18,31 @@ export function NoteEditor({ note, onSave, onDelete }) {
   const [aiError, setAiError] = useState('');
   const [showSummary, setShowSummary] = useState(false);
   const [summary, setSummary] = useState('');
-  const [viewMode, setViewMode] = useState('edit'); // 'edit', 'preview', 'split'
-  const [fontSize, setFontSize] = useState(16); // Default font size in pixels
-  const [editorFontSize, setEditorFontSize] = useState(16); // Font size for editor in split view
-  const [previewFontSize, setPreviewFontSize] = useState(16); // Font size for preview in split view
-  const [activeSplitSide, setActiveSplitSide] = useState('editor'); // 'editor' or 'preview'
 
   useEffect(() => {
     if (note) {
       setTitle(note.title || '');
-      setContent(note.content || '');
+
+      // Convert Markdown to HTML if needed
+      const rawContent = note.content || '';
+      const isHtml = /<[a-z][\s\S]*>/i.test(rawContent);
+
+      if (!isHtml && rawContent.trim()) {
+        // Assume Markdown and convert
+        // marked.parse returns a promise if async is on, but by default it's sync. 
+        // We should check if it's sync. marked v12+ might be async? 
+        // marked.parse is synchronous by default unless async option is set.
+        try {
+          const html = marked.parse(rawContent);
+          setContent(html);
+        } catch (e) {
+          console.error('Failed to parse markdown', e);
+          setContent(rawContent);
+        }
+      } else {
+        setContent(rawContent);
+      }
+
       setTags(note.tags || []);
       setHasChanges(false);
     } else {
@@ -39,132 +54,14 @@ export function NoteEditor({ note, onSave, onDelete }) {
     }
   }, [note]);
 
-  // Font size keyboard shortcuts and scroll
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (viewMode === 'split') {
-        // In split view, adjust the active side
-        const setterFunc = activeSplitSide === 'editor' ? setEditorFontSize : setPreviewFontSize;
-
-        if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
-          e.preventDefault();
-          setterFunc(prev => Math.min(prev + 2, 32));
-        } else if (e.ctrlKey && e.key === '-') {
-          e.preventDefault();
-          setterFunc(prev => Math.max(prev - 2, 10));
-        } else if (e.ctrlKey && e.key === '0') {
-          e.preventDefault();
-          setterFunc(16);
-        }
-      } else {
-        // In edit or preview mode, use single font size
-        if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
-          e.preventDefault();
-          setFontSize(prev => Math.min(prev + 2, 32));
-        } else if (e.ctrlKey && e.key === '-') {
-          e.preventDefault();
-          setFontSize(prev => Math.max(prev - 2, 10));
-        } else if (e.ctrlKey && e.key === '0') {
-          e.preventDefault();
-          setFontSize(16);
-        }
-      }
-    };
-
-    const handleWheel = (e) => {
-      if (e.ctrlKey) {
-        e.preventDefault();
-
-        if (viewMode === 'split') {
-          // In split view, adjust the active side
-          const setterFunc = activeSplitSide === 'editor' ? setEditorFontSize : setPreviewFontSize;
-
-          if (e.deltaY < 0) {
-            setterFunc(prev => Math.min(prev + 2, 32));
-          } else if (e.deltaY > 0) {
-            setterFunc(prev => Math.max(prev - 2, 10));
-          }
-        } else {
-          // In edit or preview mode, use single font size
-          if (e.deltaY < 0) {
-            setFontSize(prev => Math.min(prev + 2, 32));
-          } else if (e.deltaY > 0) {
-            setFontSize(prev => Math.max(prev - 2, 10));
-          }
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('wheel', handleWheel);
-    };
-  }, [viewMode, activeSplitSide]);
-
   const handleTitleChange = (e) => {
     setTitle(e.target.value);
     setHasChanges(true);
   };
 
-  const handleContentChange = (e) => {
-    setContent(e.target.value);
+  const handleContentChange = (newContent) => {
+    setContent(newContent);
     setHasChanges(true);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const files = Array.from(e.dataTransfer.files);
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-
-    if (imageFiles.length === 0) return;
-
-    // Insert placeholder or loading state if needed
-
-    for (const file of imageFiles) {
-      try {
-        // Check if we have the file path (Electron)
-        if (file.path) {
-          const result = await window.electronAPI.saveImage(file.path);
-          if (result.success) {
-            const imageMarkdown = `![${file.name}](local-resource://${result.filename})\n`;
-
-            // Insert at cursor position or append
-            const textarea = document.querySelector('textarea');
-            if (textarea) {
-              const start = textarea.selectionStart;
-              const end = textarea.selectionEnd;
-              const newContent = content.substring(0, start) + imageMarkdown + content.substring(end);
-              setContent(newContent);
-              setHasChanges(true);
-
-              // Restore cursor position (approximate)
-              setTimeout(() => {
-                textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length;
-                textarea.focus();
-              }, 0);
-            } else {
-              setContent(prev => prev + '\n' + imageMarkdown);
-              setHasChanges(true);
-            }
-          } else {
-            console.error('Failed to save image:', result.error);
-            setAiError('Failed to save image: ' + result.error);
-          }
-        }
-      } catch (error) {
-        console.error('Error handling dropped file:', error);
-        setAiError('Error handling dropped file');
-      }
-    }
   };
 
   const handleAddTag = (e) => {
@@ -186,7 +83,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
   const handleSave = () => {
     const noteData = {
       title: title.trim() || 'Untitled',
-      content: content.trim(),
+      content: content, // This is now HTML
       tags,
       folderId: note?.folderId || null,
     };
@@ -200,34 +97,17 @@ export function NoteEditor({ note, onSave, onDelete }) {
     }
   };
 
-  // AI Function Handlers
-  const handleAutoMarkdown = async () => {
-    if (!content.trim()) {
-      setAiError('No content to format');
-      return;
-    }
-
-    setAiLoading(true);
-    setAiError('');
-
-    try {
-      const result = await autoMarkdown(content);
-      if (result.success) {
-        setContent(result.text);
-        setHasChanges(true);
-      } else {
-        setAiError(result.error);
-      }
-    } catch (error) {
-      setAiError('Failed to format markdown');
-    } finally {
-      setAiLoading(false);
-    }
+  // Helper to extract plain text from HTML
+  const getPlainText = (html) => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
   };
 
-  const handleSummarize = async () => {
-    if (!content.trim()) {
-      setAiError('No content to summarize');
+  const handleAiAction = async (action) => {
+    const plainText = getPlainText(content);
+    if (!plainText.trim()) {
+      setAiError('No content to process');
       return;
     }
 
@@ -235,64 +115,44 @@ export function NoteEditor({ note, onSave, onDelete }) {
     setAiError('');
 
     try {
-      const result = await summarizeText(content);
-      if (result.success) {
-        setSummary(result.text);
-        setShowSummary(true);
-      } else {
-        setAiError(result.error);
+      if (action === 'fix') {
+        // Pass HTML content directly to AI to preserve formatting
+        const result = await fixAndClearText(content);
+        if (result.success) {
+          setContent(result.text);
+          setHasChanges(true);
+        } else {
+          setAiError(result.error);
+        }
+      } else if (action === 'format') {
+        // Auto format HTML with proper structure
+        const result = await autoFormatHTML(content);
+        if (result.success) {
+          setContent(result.text);
+          setHasChanges(true);
+        } else {
+          setAiError(result.error);
+        }
+      } else if (action === 'summarize') {
+        const result = await summarizeText(plainText);
+        if (result.success) {
+          setSummary(result.text);
+          setShowSummary(true);
+        } else {
+          setAiError(result.error);
+        }
+      } else if (action === 'tags') {
+        const result = await autoTitleAndTags(plainText);
+        if (result.success) {
+          setTitle(result.title);
+          setTags(result.tags);
+          setHasChanges(true);
+        } else {
+          setAiError(result.error);
+        }
       }
     } catch (error) {
-      setAiError('Failed to summarize');
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const handleFixText = async () => {
-    if (!content.trim()) {
-      setAiError('No content to fix');
-      return;
-    }
-
-    setAiLoading(true);
-    setAiError('');
-
-    try {
-      const result = await fixAndClearText(content);
-      if (result.success) {
-        setContent(result.text);
-        setHasChanges(true);
-      } else {
-        setAiError(result.error);
-      }
-    } catch (error) {
-      setAiError('Failed to fix text');
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const handleAutoTitleTags = async () => {
-    if (!content.trim()) {
-      setAiError('No content to analyze');
-      return;
-    }
-
-    setAiLoading(true);
-    setAiError('');
-
-    try {
-      const result = await autoTitleAndTags(content);
-      if (result.success) {
-        setTitle(result.title);
-        setTags(result.tags);
-        setHasChanges(true);
-      } else {
-        setAiError(result.error);
-      }
-    } catch (error) {
-      setAiError('Failed to generate title and tags');
+      setAiError(`Failed to perform ${action}`);
     } finally {
       setAiLoading(false);
     }
@@ -301,7 +161,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
   return (
     <div className="flex-1 flex flex-col h-full bg-app-bg-secondary">
       {/* Header */}
-      <div className="border-b border-border/50 px-8 py-6 bg-app-bg-secondary">
+      <div className="border-b border-border px-8 py-6 bg-app-bg-secondary">
         <div className="flex items-center justify-between gap-6 mb-6">
           <Input
             type="text"
@@ -311,35 +171,6 @@ export function NoteEditor({ note, onSave, onDelete }) {
             className="text-3xl font-bold border-none shadow-none px-0 py-2 pr-4 focus-visible:ring-0 bg-transparent placeholder:text-app-text-muted text-app-text-primary"
           />
           <div className="flex gap-2 flex-shrink-0">
-            <div className="flex border rounded-md overflow-hidden shadow-sm">
-              <Button
-                variant={viewMode === 'edit' ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode('edit')}
-                className="rounded-none h-8 px-3"
-              >
-                <Edit className="w-3.5 h-3.5 mr-1.5" />
-                Edit
-              </Button>
-              <Button
-                variant={viewMode === 'split' ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode('split')}
-                className="rounded-none h-8 px-3 border-x"
-              >
-                <FileText className="w-3.5 h-3.5 mr-1.5" />
-                Split
-              </Button>
-              <Button
-                variant={viewMode === 'preview' ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode('preview')}
-                className="rounded-none h-8 px-3"
-              >
-                <Eye className="w-3.5 h-3.5 mr-1.5" />
-                Preview
-              </Button>
-            </div>
             {note && (
               <Button
                 variant="ghost"
@@ -365,7 +196,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
         {/* Tags */}
         <div className="flex flex-wrap gap-2 items-center">
           {tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="gap-1 shadow-sm">
+            <Badge key={tag} variant="secondary" className="gap-1 shadow-sm bg-app-bg-tertiary text-app-text-primary hover:bg-app-bg-tertiary/80">
               {tag}
               <X
                 className="w-3 h-3 cursor-pointer hover:text-destructive transition-colors"
@@ -379,71 +210,22 @@ export function NoteEditor({ note, onSave, onDelete }) {
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={handleAddTag}
-            className="w-40 h-7 text-xs bg-input border-input-border shadow-sm"
+            className="w-40 h-7 text-xs bg-app-bg-primary border-input-border shadow-sm text-app-text-primary placeholder:text-app-text-muted"
           />
         </div>
       </div>
 
-      {/* AI Toolbar */}
-      <div className="border-b border-border/50 px-8 py-3 bg-app-bg-primary">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-app-text-muted mr-2">AI Tools:</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAutoMarkdown}
-            disabled={aiLoading || !content.trim()}
-            className="text-xs h-7"
-          >
-            <FileText className="w-3 h-3 mr-1.5" />
-            Auto Markdown
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSummarize}
-            disabled={aiLoading || !content.trim()}
-            className="text-xs h-7"
-          >
-            <Wand2 className="w-3 h-3 mr-1.5" />
-            Summarize
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleFixText}
-            disabled={aiLoading || !content.trim()}
-            className="text-xs h-7"
-          >
-            <Sparkles className="w-3 h-3 mr-1.5" />
-            Fix & Clear
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAutoTitleTags}
-            disabled={aiLoading || !content.trim()}
-            className="text-xs h-7"
-          >
-            <Tag className="w-3 h-3 mr-1.5" />
-            Auto Title & Tags
-          </Button>
-          {aiLoading && (
-            <span className="text-xs text-blue-500 animate-pulse ml-2">
-              Processing...
-            </span>
-          )}
-          {aiError && (
-            <span className="text-xs text-destructive ml-2">
-              {aiError}
-            </span>
-          )}
+      {/* AI Loading/Error Status (Overlay or small bar) */}
+      {(aiLoading || aiError) && (
+        <div className="px-8 py-2 bg-app-bg-primary border-b border-border flex items-center gap-2">
+          {aiLoading && <span className="text-xs text-blue-500 animate-pulse">AI Processing...</span>}
+          {aiError && <span className="text-xs text-destructive">{aiError}</span>}
         </div>
-      </div>
+      )}
 
       {/* Summary View */}
       {showSummary && (
-        <div className="border-b border-border/50 px-8 py-4 bg-blue-50 dark:bg-blue-950/20">
+        <div className="border-b border-border px-8 py-4 bg-blue-50 dark:bg-blue-950/20">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
@@ -460,7 +242,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
               variant="ghost"
               size="sm"
               onClick={() => setShowSummary(false)}
-              className="h-6 w-6 p-0"
+              className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/40"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -468,101 +250,14 @@ export function NoteEditor({ note, onSave, onDelete }) {
         </div>
       )}
 
-      {/* Content Editor/Preview */}
-      <div className="flex-1 overflow-hidden flex">
-        {viewMode === 'edit' && (
-          <div
-            className="flex-1 px-8 py-6 overflow-auto"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
-            <Textarea
-              placeholder="Start writing your note... (Supports Markdown)"
-              value={content}
-              onChange={handleContentChange}
-              style={{ fontSize: `${fontSize}px` }}
-              className="w-full h-full resize-none border-none shadow-none focus-visible:ring-0 text-base bg-transparent placeholder:text-app-text-muted text-app-text-primary leading-relaxed font-mono"
-            />
-          </div>
-        )}
-
-        {viewMode === 'preview' && (
-          <div className="flex-1 px-8 py-6 overflow-auto">
-            <div className="prose prose-slate dark:prose-invert max-w-none" style={{ fontSize: `${fontSize}px` }}>
-              {content ? (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  urlTransform={(url) => {
-                    if (url.startsWith('local-resource://')) {
-                      return url;
-                    }
-                    return url;
-                  }}
-                >
-                  {content}
-                </ReactMarkdown>
-              ) : (
-                <p className="text-app-text-muted italic">No content to preview</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {viewMode === 'split' && (
-          <>
-            {/* Editor Side */}
-            <div
-              className="flex-1 border-r border-border/50 overflow-hidden flex flex-col"
-              onMouseEnter={() => setActiveSplitSide('editor')}
-            >
-              <div className="px-4 py-2 border-b border-border/50 bg-app-bg-primary">
-                <span className="text-xs font-semibold text-app-text-secondary">
-                  MARKDOWN {activeSplitSide === 'editor' && '(Active)'}
-                </span>
-              </div>
-              <div className="flex-1 px-6 py-4 overflow-auto">
-                <Textarea
-                  placeholder="Start writing your note..."
-                  value={content}
-                  onChange={handleContentChange}
-                  style={{ fontSize: `${editorFontSize}px`, lineHeight: '1.6' }}
-                  className="w-full h-full resize-none border-none shadow-none focus-visible:ring-0 bg-transparent placeholder:text-app-text-muted text-app-text-primary font-mono"
-                />
-              </div>
-            </div>
-
-            {/* Preview Side */}
-            <div
-              className="flex-1 overflow-hidden flex flex-col"
-              onMouseEnter={() => setActiveSplitSide('preview')}
-            >
-              <div className="px-4 py-2 border-b border-border/50 bg-app-bg-primary">
-                <span className="text-xs font-semibold text-app-text-secondary">
-                  PREVIEW {activeSplitSide === 'preview' && '(Active)'}
-                </span>
-              </div>
-              <div className="flex-1 px-6 py-4 overflow-auto">
-                <div className="prose prose-slate dark:prose-invert max-w-none prose-sm" style={{ fontSize: `${previewFontSize}px` }}>
-                  {content ? (
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      urlTransform={(url) => {
-                        if (url.startsWith('local-resource://')) {
-                          return url;
-                        }
-                        return url;
-                      }}
-                    >
-                      {content}
-                    </ReactMarkdown>
-                  ) : (
-                    <p className="text-app-text-muted italic text-sm">Preview will appear here...</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+      {/* TipTap Editor */}
+      <div className="flex-1 overflow-hidden">
+        <TipTapEditor
+          content={content}
+          onChange={handleContentChange}
+          onSave={handleSave}
+          onAiAction={handleAiAction}
+        />
       </div>
 
       {/* Footer Info */}
@@ -574,4 +269,3 @@ export function NoteEditor({ note, onSave, onDelete }) {
     </div>
   );
 }
-

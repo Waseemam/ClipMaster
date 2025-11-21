@@ -1,7 +1,6 @@
 import { app, BrowserWindow, ipcMain, clipboard, Menu, Tray, nativeImage, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import path from 'path';
-import path from 'path';
 import fs from 'fs';
 import JsonDatabase from './lib/jsonDb.js';
 
@@ -362,6 +361,7 @@ const createWindow = () => {
   // ==================== IMAGE HANDLING ====================
 
   ipcMain.handle('save-image', async (event, filePath) => {
+    console.log('[MAIN] save-image called with:', filePath);
     try {
       const userDataPath = app.getPath('userData');
       const imagesDir = path.join(userDataPath, 'images');
@@ -384,6 +384,56 @@ const createWindow = () => {
       return { success: true, filename };
     } catch (error) {
       console.error('Save image error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('cleanup-images', async () => {
+    console.log('[MAIN] cleanup-images called');
+    try {
+      const userDataPath = app.getPath('userData');
+      const imagesDir = path.join(userDataPath, 'images');
+
+      if (!fs.existsSync(imagesDir)) {
+        return { success: true, count: 0 };
+      }
+
+      // Get all notes
+      const notes = db.getNotes();
+
+      // Collect all used image filenames
+      const usedImages = new Set();
+      const regex = /local-resource:\/\/([^"\s)]+)/g;
+
+      notes.forEach(note => {
+        if (note.content) {
+          let match;
+          while ((match = regex.exec(note.content)) !== null) {
+            usedImages.add(match[1]);
+          }
+        }
+      });
+
+      // Also check clipboard history if applicable (optional, but good practice)
+      // const history = db.getClipboardHistory();
+      // history.forEach(item => { ... });
+
+      // List all files in images directory
+      const files = fs.readdirSync(imagesDir);
+      let deletedCount = 0;
+
+      files.forEach(file => {
+        if (!usedImages.has(file)) {
+          const filePath = path.join(imagesDir, file);
+          fs.unlinkSync(filePath);
+          deletedCount++;
+          console.log('Deleted unused image:', file);
+        }
+      });
+
+      return { success: true, count: deletedCount };
+    } catch (error) {
+      console.error('Cleanup images error:', error);
       return { success: false, error: error.message };
     }
   });
