@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, Clipboard as ClipboardIcon } from 'lucide-react';
+import { FileText, Clipboard as ClipboardIcon, FolderTree } from 'lucide-react';
 
 export function Navigation({ currentView, onViewChange }) {
   return (
@@ -14,7 +14,17 @@ export function Navigation({ currentView, onViewChange }) {
       >
         <FileText className="w-5 h-5" />
       </Button>
-      
+
+      <Button
+        variant={currentView === 'folders' ? 'default' : 'ghost'}
+        size="icon"
+        onClick={() => onViewChange('folders')}
+        className="w-12 h-12 rounded-xl"
+        title="Folders"
+      >
+        <FolderTree className="w-5 h-5" />
+      </Button>
+
       <Button
         variant={currentView === 'clipboard' ? 'default' : 'ghost'}
         size="icon"

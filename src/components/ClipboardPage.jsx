@@ -3,15 +3,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { 
-  Copy, 
-  Search, 
-  Trash2, 
-  Clock, 
+import {
+  Copy,
+  Search,
+  Trash2,
+  Clock,
   Filter,
-  Upload,
-  CheckCircle2,
-  Circle,
+  Sparkles,
   Clipboard as ClipboardIcon,
 } from 'lucide-react';
 import { db } from '@/lib/localDb';
@@ -20,7 +18,6 @@ import { generateClipboardTitle } from '@/lib/ai';
 export function ClipboardPage() {
   const [clipboardItems, setClipboardItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [uploadedIds, setUploadedIds] = useState(new Set());
   const [generatingTitles, setGeneratingTitles] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [fontSize, setFontSize] = useState(14); // Default font size in pixels
@@ -34,7 +31,7 @@ export function ClipboardPage() {
     try {
       setLoading(true);
       const response = await db.getClipboardHistory();
-      
+
       if (response.success && response.data.items) {
         // Convert database items to local format
         const dbItems = response.data.items.map(item => {
@@ -43,15 +40,10 @@ export function ClipboardPage() {
             content: item.content,
             type: item.type,
             timestamp: item.created_at,
-            uploaded: true,
             title: item.title || item.content.split('\n')[0].substring(0, 60),
           };
         });
         setClipboardItems(dbItems);
-        
-        // Mark all database items as uploaded
-        const uploadedSet = new Set(dbItems.map(item => item.id));
-        setUploadedIds(uploadedSet);
       }
     } catch (error) {
       console.error('Failed to load clipboard history:', error);
@@ -64,37 +56,30 @@ export function ClipboardPage() {
     // Start clipboard monitoring
     if (window.electronAPI) {
       window.electronAPI.startClipboardMonitoring();
-      
+
       window.electronAPI.onClipboardChange((data) => {
+        // Add the new item to the top of the list without reloading everything
         setClipboardItems(prev => {
-          // Check for duplicates - don't add if the exact same content exists in recent items
-          const isDuplicate = prev.slice(0, 10).some(item => 
+          // Check if this item already exists (avoid duplicates)
+          const isDuplicate = prev.some(item =>
             item.content === data.content && item.type === data.type
           );
-          
+
           if (isDuplicate) {
-            console.log('Duplicate clipboard item detected, skipping...');
             return prev;
           }
-          
-          // Generate temporary title from first line
-          const tempTitle = data.type === 'text' 
-            ? data.content.split('\n')[0].substring(0, 60).trim() || 'Clipboard Item'
-            : 'Image';
-          
-          // Add to local state with unique ID
+
+          // Add new item to the beginning
           const newItem = {
             id: Date.now() + Math.random(),
-            ...data,
-            uploaded: false,
-            title: tempTitle,
+            content: data.content,
+            type: data.type,
+            timestamp: data.timestamp,
+            title: data.type === 'text'
+              ? data.content.split('\n')[0].substring(0, 60).trim() || 'Clipboard Item'
+              : 'Image',
           };
-          
-          // Check if it should be auto-uploaded
-          if (shouldAutoUpload(data.content, prev)) {
-            uploadToServer(newItem);
-          }
-          
+
           return [newItem, ...prev];
         });
       });
@@ -149,76 +134,33 @@ export function ClipboardPage() {
     };
   }, []);
 
-  const shouldAutoUpload = (content, existingItems) => {
-    // Don't upload if too short
-    if (content.length < 10) return false;
-    
-    // Don't upload if it's a duplicate of recently uploaded items
-    const recentUploaded = existingItems
-      .filter(item => item.uploaded)
-      .slice(0, 50);
-    
-    for (const item of recentUploaded) {
-      if (item.content === content) return false;
+  // Generate AI title for a clipboard item
+  const generateAITitle = async (item) => {
+    if (item.type !== 'text' || item.content.length < 20) {
+      return;
     }
-    
-    // Don't upload if it looks like temporary/junk data
-    const junkPatterns = [
-      /^[\d\s]+$/, // Only numbers and spaces
-      /^[a-z]$/, // Single letter
-      /^(http|https):\/\/.*\.(jpg|jpeg|png|gif)$/i, // Direct image URLs
-    ];
-    
-    for (const pattern of junkPatterns) {
-      if (pattern.test(content.trim())) return false;
-    }
-    
-    // Upload if it looks relevant
-    return true;
-  };
 
-  const uploadToServer = async (item) => {
-    // Add to generating state
     setGeneratingTitles(prevSet => {
       const newSet = new Set(prevSet || new Set());
       newSet.add(item.id);
       return newSet;
     });
-    
+
     try {
-      // Generate AI title for text content
-      let title = item.title || item.content.split('\n')[0].substring(0, 60).trim(); // Use existing title or first line
-      
-      if (item.type === 'text' && item.content.length > 20) {
-        const titleResult = await generateClipboardTitle(item.content);
-        if (titleResult.success) {
-          title = titleResult.title;
-        }
-      }
-      
-      const response = await db.saveClipboardItem({
-        content: item.content,
-        type: item.type,
-        title: title,
-      });
-      
-      if (response.success) {
-        // Mark as uploaded
-        setUploadedIds(prevSet => {
-          const newSet = new Set(prevSet || new Set());
-          newSet.add(item.id);
-          return newSet;
+      const titleResult = await generateClipboardTitle(item.content);
+      if (titleResult.success) {
+        // Update the item in the database with the AI-generated title
+        await db.saveClipboardItem({
+          content: item.content,
+          type: item.type,
+          title: titleResult.title,
         });
-        
-        // Update item with AI-generated title and uploaded status
-        setClipboardItems(prevItems => 
-          (prevItems || []).map(i => i.id === item.id ? { ...i, uploaded: true, title } : i)
-        );
+        // Reload to show updated title
+        await loadClipboardHistory();
       }
     } catch (error) {
-      console.error('Failed to save clipboard item:', error);
+      console.error('Failed to generate AI title:', error);
     } finally {
-      // Remove from generating state
       setGeneratingTitles(prevSet => {
         const newSet = new Set(prevSet || new Set());
         newSet.delete(item.id);
@@ -227,32 +169,17 @@ export function ClipboardPage() {
     }
   };
 
-  const manualUpload = (item) => {
-    if (!item.uploaded) {
-      uploadToServer(item);
-    }
-  };
-
   const copyToClipboard = (content) => {
     navigator.clipboard.writeText(content);
   };
 
-  const deleteItem = async (id, isUploaded) => {
-    // Delete from local state
-    setClipboardItems(prevItems => (prevItems || []).filter(item => item.id !== id));
-    setUploadedIds(prevSet => {
-      const newSet = new Set(prevSet || new Set());
-      newSet.delete(id);
-      return newSet;
-    });
-
-    // Also delete from database if it was uploaded
-    if (isUploaded) {
-      try {
-        await db.deleteClipboardItem(id);
-      } catch (error) {
-        console.error('Failed to delete clipboard item from database:', error);
-      }
+  const deleteItem = async (id) => {
+    try {
+      await db.deleteClipboardItem(id);
+      // Reload clipboard history to reflect the deletion
+      await loadClipboardHistory();
+    } catch (error) {
+      console.error('Failed to delete clipboard item from database:', error);
     }
   };
 
@@ -264,10 +191,9 @@ export function ClipboardPage() {
     try {
       // Clear from database
       await db.clearClipboardHistory();
-      
-      // Clear local state
-      setClipboardItems([]);
-      setUploadedIds(new Set());
+
+      // Reload to show empty state
+      await loadClipboardHistory();
     } catch (error) {
       console.error('Failed to clear clipboard history:', error);
       alert('Failed to clear clipboard history. Please try again.');
@@ -309,7 +235,7 @@ export function ClipboardPage() {
           <div>
             <h1 className="text-3xl font-bold text-app-text-primary">Clipboard History</h1>
             <p className="text-sm text-app-text-muted mt-1">
-              {clipboardItems.length} items • {uploadedIds.size} uploaded
+              {clipboardItems.length} items
             </p>
           </div>
           <div className="flex gap-2">
@@ -389,28 +315,13 @@ export function ClipboardPage() {
                             <span className="text-xs text-app-text-muted">
                               {new Date(item.timestamp).toLocaleTimeString()}
                             </span>
-                            {item.uploaded ? (
-                              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Uploaded</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 text-xs text-app-text-muted">
-                                <Circle className="w-3 h-3" />
-                                <span>Local only</span>
-                              </div>
-                            )}
                           </div>
-                          
+
                           {/* Display title for all items */}
                           {item.title && (
-                            <h4 className={`text-sm font-semibold mb-1 ${
-                              item.uploaded 
-                                ? 'text-app-text-primary' 
-                                : 'text-app-text-secondary italic'
-                            }`}>
+                            <h4 className="text-sm font-semibold mb-1 text-app-text-primary">
                               {item.title}
-                              {!item.uploaded && generatingTitles.has(item.id) && (
+                              {generatingTitles.has(item.id) && (
                                 <span className="ml-2 text-xs text-blue-500">
                                   (generating AI title...)
                                 </span>
@@ -432,22 +343,20 @@ export function ClipboardPage() {
                         </div>
                         
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {!item.uploaded && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => manualUpload(item)}
-                              className="h-8 w-8"
-                              title="Upload to server with AI title"
-                              disabled={generatingTitles.has(item.id)}
-                            >
-                              {generatingTitles.has(item.id) ? (
-                                <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-                              ) : (
-                                <Upload className="w-4 h-4" />
-                              )}
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => generateAITitle(item)}
+                            className="h-8 w-8"
+                            title="Generate AI title"
+                            disabled={generatingTitles.has(item.id) || item.type !== 'text'}
+                          >
+                            {generatingTitles.has(item.id) ? (
+                              <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+                            ) : (
+                              <Sparkles className="w-4 h-4" />
+                            )}
+                          </Button>
                           {item.type === 'text' && (
                             <Button
                               variant="ghost"
@@ -462,7 +371,7 @@ export function ClipboardPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteItem(item.id, item.uploaded)}
+                            onClick={() => deleteItem(item.id)}
                             className="h-8 w-8 text-destructive"
                             title="Delete"
                           >

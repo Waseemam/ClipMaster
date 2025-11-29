@@ -153,32 +153,40 @@ class JsonDatabase {
   }
 
   createFolder(folderData) {
-    const { name, color } = folderData;
-    
+    const { name, color, type, icon, rules, matchType } = folderData;
+
     const folder = {
       id: this.db.nextId.folders++,
       name,
       color: color || null,
+      type: type || 'manual',
+      icon: icon || 'folder',
+      rules: rules || [],
+      matchType: matchType || 'all',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    
+
     this.db.folders.push(folder);
     this.save();
-    
+
     return folder;
   }
 
   updateFolder(id, folderData) {
-    const { name, color } = folderData;
+    const { name, color, type, icon, rules, matchType } = folderData;
     const folder = this.db.folders.find(f => f.id === id);
-    
+
     if (!folder) return null;
-    
-    folder.name = name;
-    folder.color = color || null;
+
+    if (name !== undefined) folder.name = name;
+    if (color !== undefined) folder.color = color;
+    if (type !== undefined) folder.type = type;
+    if (icon !== undefined) folder.icon = icon;
+    if (rules !== undefined) folder.rules = rules;
+    if (matchType !== undefined) folder.matchType = matchType;
     folder.updated_at = new Date().toISOString();
-    
+
     this.save();
     return folder;
   }

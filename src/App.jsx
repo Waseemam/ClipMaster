@@ -4,6 +4,7 @@ import { Navigation } from '@/components/Navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { NoteEditor } from '@/components/NoteEditor';
 import { ClipboardPage } from '@/components/ClipboardPage';
+import { FoldersPage } from '@/components/FoldersPage';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { db } from '@/lib/localDb';
 import { loadSettings } from '@/lib/settings';
@@ -192,23 +193,26 @@ function App() {
         // Update existing note
         const response = await db.updateNote(currentNote.id, noteData);
         if (response.success) {
-          await loadNotes();
-          // Find and set the updated note
-          const updatedNote = notes.find(n => n.id === currentNote.id);
-          if (updatedNote) {
-            setCurrentNote({ ...updatedNote, ...noteData });
-          }
+          // Update the notes list without full reload - just update the specific note
+          setNotes(prevNotes =>
+            prevNotes.map(n =>
+              n.id === currentNote.id
+                ? { ...n, ...response.data }
+                : n
+            ).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+          );
+          // Update current note with the response data
+          setCurrentNote(response.data);
         }
       } else {
         // Create new note
         const response = await db.createNote(noteData);
         if (response.success) {
-          await loadNotes();
+          // Add the new note to the beginning of the list instead of reloading
+          setNotes(prevNotes => [response.data, ...prevNotes]);
           // Set the newly created note as current
-          if (response.data) {
-            setCurrentNote(response.data);
-            setIsNewNote(false);
-          }
+          setCurrentNote(response.data);
+          setIsNewNote(false);
         }
       }
     } catch (error) {
@@ -286,7 +290,7 @@ function App() {
       
       <div className="flex-1 flex overflow-hidden">
         <Navigation currentView={currentView} onViewChange={setCurrentView} />
-        
+
         {currentView === 'notes' ? (
           <>
             <Sidebar
@@ -294,6 +298,8 @@ function App() {
               currentNote={currentNote}
               onNewNote={handleNewNote}
               onSelectNote={handleSelectNote}
+              onDeleteNote={handleDeleteNote}
+              onReloadNotes={loadNotes}
             />
             <NoteEditor
               note={isNewNote ? null : currentNote}
@@ -301,6 +307,12 @@ function App() {
               onDelete={handleDeleteNote}
             />
           </>
+        ) : currentView === 'folders' ? (
+          <FoldersPage onSelectNote={(note) => {
+            setCurrentView('notes');
+            setCurrentNote(note);
+            setIsNewNote(false);
+          }} />
         ) : (
           <ClipboardPage />
         )}
