@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Save, Trash2, X, Wand2, FileText, Sparkles, Tag } from 'lucide-react';
+import { Save, Trash2, X, Wand2, FileText, Sparkles, Tag, Folder } from 'lucide-react';
 import { autoMarkdown, summarizeText, fixAndClearText, autoTitleAndTags, autoFormatHTML } from '@/lib/ai';
 import TipTapEditor from './TipTapEditor';
+import { db } from '@/lib/localDb';
 
 import { marked } from 'marked';
+
+const AUTOSAVE_DELAY = 2000; // 2 seconds debounce
+const DRAFT_STORAGE_KEY = 'clipmaster_draft_note';
+const LAST_FOLDER_KEY = 'clipmaster_last_folder';
 
 export function NoteEditor({ note, onSave, onDelete }) {
   const [title, setTitle] = useState('');
@@ -18,9 +23,67 @@ export function NoteEditor({ note, onSave, onDelete }) {
   const [aiError, setAiError] = useState('');
   const [showSummary, setShowSummary] = useState(false);
   const [summary, setSummary] = useState('');
+  const [autoSaving, setAutoSaving] = useState(false);
+  const autoSaveTimeoutRef = useRef(null);
+  const lastSavedNoteIdRef = useRef(null);
+
+  // Folder picker state
+  const [folders, setFolders] = useState([]);
+  const [selectedFolderId, setSelectedFolderId] = useState(null);
+
+  // Load folders on mount
+  useEffect(() => {
+    const loadFolders = async () => {
+      try {
+        const response = await db.getFolders();
+        if (response.success) {
+          setFolders(response.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to load folders:', error);
+      }
+    };
+    loadFolders();
+  }, []);
+
+  // Load draft from localStorage on mount (only for new notes)
+  useEffect(() => {
+    if (!note) {
+      try {
+        const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (savedDraft) {
+          const draft = JSON.parse(savedDraft);
+          setTitle(draft.title || '');
+          setContent(draft.content || '');
+          setTags(draft.tags || []);
+          setSelectedFolderId(draft.folderId || null);
+          setHasChanges(true);
+        } else {
+          // Load most recently used folder for new notes
+          try {
+            const lastFolderId = localStorage.getItem(LAST_FOLDER_KEY);
+            if (lastFolderId && lastFolderId !== 'null') {
+              setSelectedFolderId(parseInt(lastFolderId));
+            }
+          } catch (e) {
+            console.error('Failed to load last folder:', e);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load draft:', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (note) {
+      // If we're already editing this note, don't reset the editor content
+      // This prevents flickering when auto-save updates the note object
+      if (lastSavedNoteIdRef.current === note.id) {
+        // Just update the reference but keep the editor state
+        return;
+      }
+
       setTitle(note.title || '');
 
       // Convert Markdown to HTML if needed
@@ -29,8 +92,8 @@ export function NoteEditor({ note, onSave, onDelete }) {
 
       if (!isHtml && rawContent.trim()) {
         // Assume Markdown and convert
-        // marked.parse returns a promise if async is on, but by default it's sync. 
-        // We should check if it's sync. marked v12+ might be async? 
+        // marked.parse returns a promise if async is on, but by default it's sync.
+        // We should check if it's sync. marked v12+ might be async?
         // marked.parse is synchronous by default unless async option is set.
         try {
           const html = marked.parse(rawContent);
@@ -44,15 +107,77 @@ export function NoteEditor({ note, onSave, onDelete }) {
       }
 
       setTags(note.tags || []);
+      setSelectedFolderId(note.folder_id || note.folderId || null);
       setHasChanges(false);
+      lastSavedNoteIdRef.current = note.id;
+
+      // Clear draft when loading an existing note
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
     } else {
-      // New note
-      setTitle('');
-      setContent('');
-      setTags([]);
-      setHasChanges(false);
+      // New note - don't clear state here, the mount effect will load the draft
+      if (lastSavedNoteIdRef.current !== null) {
+        // Only reset if we're switching from an existing note to a new one
+        setTitle('');
+        setContent('');
+        setTags([]);
+        setHasChanges(false);
+        lastSavedNoteIdRef.current = null;
+      }
     }
   }, [note]);
+
+  // Auto-save effect with debouncing
+  useEffect(() => {
+    // Don't auto-save if there are no changes or if content is empty
+    if (!hasChanges || (!title.trim() && !content.trim())) {
+      return;
+    }
+
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set new timeout for auto-save
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      setAutoSaving(true);
+
+      const noteData = {
+        title: title.trim() || 'Untitled',
+        content: content,
+        tags,
+        folderId: selectedFolderId,
+      };
+
+      if (note) {
+        // Update existing note
+        await onSave(noteData);
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      } else {
+        // For new notes, save to localStorage as draft
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(noteData));
+
+        // Also auto-create the note in the database
+        await onSave(noteData);
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      }
+
+      // Save last used folder
+      if (selectedFolderId) {
+        localStorage.setItem(LAST_FOLDER_KEY, selectedFolderId.toString());
+      }
+
+      setAutoSaving(false);
+      setHasChanges(false);
+    }, AUTOSAVE_DELAY);
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [title, content, tags, selectedFolderId, hasChanges, note, onSave]);
 
   const handleTitleChange = (e) => {
     setTitle(e.target.value);
@@ -85,10 +210,15 @@ export function NoteEditor({ note, onSave, onDelete }) {
       title: title.trim() || 'Untitled',
       content: content, // This is now HTML
       tags,
-      folderId: note?.folderId || null,
+      folderId: selectedFolderId,
     };
     onSave(noteData);
     setHasChanges(false);
+
+    // Save last used folder
+    if (selectedFolderId) {
+      localStorage.setItem(LAST_FOLDER_KEY, selectedFolderId.toString());
+    }
   };
 
   const handleDelete = () => {
@@ -170,7 +300,17 @@ export function NoteEditor({ note, onSave, onDelete }) {
             onChange={handleTitleChange}
             className="text-3xl font-bold border-none shadow-none px-0 py-2 pr-4 focus-visible:ring-0 bg-transparent placeholder:text-app-text-muted text-app-text-primary"
           />
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 flex-shrink-0 items-center">
+            {autoSaving && (
+              <span className="text-xs text-blue-500 animate-pulse mr-2">
+                Auto-saving...
+              </span>
+            )}
+            {!autoSaving && !hasChanges && note && (
+              <span className="text-xs text-green-600 dark:text-green-400 mr-2">
+                ✓ Saved
+              </span>
+            )}
             {note && (
               <Button
                 variant="ghost"
@@ -188,8 +328,31 @@ export function NoteEditor({ note, onSave, onDelete }) {
               className="shadow-sm"
             >
               <Save className="w-4 h-4 mr-2" />
-              Save
+              Save Now
             </Button>
+          </div>
+        </div>
+
+        {/* Folder Picker */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2">
+            <Folder className="w-4 h-4 text-app-text-muted" />
+            <select
+              value={selectedFolderId || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedFolderId(value ? parseInt(value) : null);
+                setHasChanges(true);
+              }}
+              className="text-sm bg-app-bg-primary border border-input-border rounded-md px-3 py-1.5 text-app-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">No Folder (Unfiled)</option>
+              {folders.map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {folder.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -263,7 +426,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
       {/* Footer Info */}
       {note && (
         <div className="border-t border-border/50 px-8 py-3 text-xs text-app-text-muted bg-app-bg-secondary">
-          Last updated: {new Date(note.updatedAt || note.createdAt).toLocaleString()}
+          Last updated: {new Date(note.updated_at || note.updatedAt || note.created_at || note.createdAt).toLocaleString()}
         </div>
       )}
     </div>

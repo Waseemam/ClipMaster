@@ -200,11 +200,31 @@ const createWindow = () => {
       if (text && text !== lastClipboardText && text.length > 0) {
         lastClipboardText = text;
         lastClipboardImage = ''; // Clear image tracking when text is copied
-        mainWindow.webContents.send('clipboard-change', {
+
+        const clipboardData = {
           type: 'text',
           content: text,
           timestamp: new Date().toISOString(),
-        });
+        };
+
+        // Save to database immediately (always, regardless of which tab is open)
+        if (db && text.length >= 10) {
+          try {
+            // Generate title from first line
+            const title = text.split('\n')[0].substring(0, 60).trim() || 'Clipboard Item';
+            db.saveClipboardItem({
+              content: text,
+              type: 'text',
+              title: title,
+            });
+            console.log('Clipboard text saved to database');
+          } catch (error) {
+            console.error('Failed to save clipboard text to database:', error);
+          }
+        }
+
+        // Also send to renderer for immediate UI update
+        mainWindow.webContents.send('clipboard-change', clipboardData);
       }
       // Only check for images if there's no text or text hasn't changed
       else if (!image.isEmpty() && !text) {
@@ -213,11 +233,29 @@ const createWindow = () => {
         if (imageData !== lastClipboardImage) {
           lastClipboardImage = imageData;
           lastClipboardText = ''; // Clear text tracking when image is copied
-          mainWindow.webContents.send('clipboard-change', {
+
+          const clipboardData = {
             type: 'image',
             content: imageData,
             timestamp: new Date().toISOString(),
-          });
+          };
+
+          // Save to database immediately
+          if (db) {
+            try {
+              db.saveClipboardItem({
+                content: imageData,
+                type: 'image',
+                title: 'Image',
+              });
+              console.log('Clipboard image saved to database');
+            } catch (error) {
+              console.error('Failed to save clipboard image to database:', error);
+            }
+          }
+
+          // Also send to renderer for immediate UI update
+          mainWindow.webContents.send('clipboard-change', clipboardData);
         }
       }
     }, 500); // Check every 500ms
@@ -316,6 +354,26 @@ const createWindow = () => {
       return { success: true, data: folder };
     } catch (error) {
       console.error('Create folder error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:updateFolder', async (event, id, folderData) => {
+    try {
+      const folder = db.updateFolder(id, folderData);
+      return { success: true, data: folder };
+    } catch (error) {
+      console.error('Update folder error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('db:deleteFolder', async (event, id) => {
+    try {
+      const success = db.deleteFolder(id);
+      return { success, data: { deleted: success } };
+    } catch (error) {
+      console.error('Delete folder error:', error);
       return { success: false, error: error.message };
     }
   });

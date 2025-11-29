@@ -49,6 +49,14 @@ class LocalDbClient {
     return window.electronAPI.db.createFolder(folderData);
   }
 
+  async updateFolder(id, folderData) {
+    return window.electronAPI.db.updateFolder(id, folderData);
+  }
+
+  async deleteFolder(id) {
+    return window.electronAPI.db.deleteFolder(id);
+  }
+
   // Tags API
   async getTags() {
     return window.electronAPI.db.getTags();

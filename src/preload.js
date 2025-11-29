@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Folders
     getFolders: () => ipcRenderer.invoke('db:getFolders'),
     createFolder: (folderData) => ipcRenderer.invoke('db:createFolder', folderData),
+    updateFolder: (id, folderData) => ipcRenderer.invoke('db:updateFolder', id, folderData),
+    deleteFolder: (id) => ipcRenderer.invoke('db:deleteFolder', id),
 
     // Tags
     getTags: () => ipcRenderer.invoke('db:getTags'),
