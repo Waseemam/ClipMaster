@@ -379,7 +379,32 @@ const MenuBar = ({ editor, onAiAction }) => {
 };
 
 export default function TipTapEditor({ content, onChange, onSave, onAiAction }) {
-    // ... (useEditor config remains the same)
+    const [contextMenu, setContextMenu] = useState(null);
+
+    // Handle context menu
+    const handleContextMenu = useCallback((e) => {
+        e.preventDefault();
+        setContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+        });
+    }, []);
+
+    const closeContextMenu = useCallback(() => {
+        setContextMenu(null);
+    }, []);
+
+    useEffect(() => {
+        if (contextMenu) {
+            window.addEventListener('click', closeContextMenu);
+            window.addEventListener('scroll', closeContextMenu);
+            return () => {
+                window.removeEventListener('click', closeContextMenu);
+                window.removeEventListener('scroll', closeContextMenu);
+            };
+        }
+    }, [contextMenu, closeContextMenu]);
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -501,12 +526,132 @@ export default function TipTapEditor({ content, onChange, onSave, onAiAction }) 
         }
     }, [content, editor]);
 
+    const handleContextMenuAction = (action) => {
+        if (!editor) return;
+
+        switch (action) {
+            case 'cut':
+                document.execCommand('cut');
+                break;
+            case 'copy':
+                document.execCommand('copy');
+                break;
+            case 'paste':
+                document.execCommand('paste');
+                break;
+            case 'selectAll':
+                editor.chain().focus().selectAll().run();
+                break;
+            case 'undo':
+                editor.chain().focus().undo().run();
+                break;
+            case 'redo':
+                editor.chain().focus().redo().run();
+                break;
+            case 'bold':
+                editor.chain().focus().toggleBold().run();
+                break;
+            case 'italic':
+                editor.chain().focus().toggleItalic().run();
+                break;
+            case 'underline':
+                editor.chain().focus().toggleUnderline().run();
+                break;
+        }
+        closeContextMenu();
+    };
+
     return (
         <div className="flex flex-col h-full bg-app-bg-secondary">
             <MenuBar editor={editor} onAiAction={onAiAction} />
-            <div className="flex-1 overflow-y-auto bg-app-bg-secondary">
+            <div
+                className="flex-1 overflow-y-auto bg-app-bg-secondary"
+                onContextMenu={handleContextMenu}
+            >
                 <EditorContent editor={editor} />
             </div>
+
+            {/* Context Menu */}
+            {contextMenu && (
+                <div
+                    className="fixed z-50 bg-app-bg-primary border border-border rounded-lg shadow-lg py-1 min-w-[180px]"
+                    style={{
+                        left: `${contextMenu.x}px`,
+                        top: `${contextMenu.y}px`,
+                    }}
+                >
+                    <button
+                        className="w-full text-left px-4 py-2 text-sm text-app-text-primary hover:bg-app-bg-tertiary flex items-center gap-2"
+                        onClick={() => handleContextMenuAction('cut')}
+                    >
+                        <span className="text-xs">✂️</span> Cut
+                        <span className="ml-auto text-xs text-app-text-muted">Ctrl+X</span>
+                    </button>
+                    <button
+                        className="w-full text-left px-4 py-2 text-sm text-app-text-primary hover:bg-app-bg-tertiary flex items-center gap-2"
+                        onClick={() => handleContextMenuAction('copy')}
+                    >
+                        <span className="text-xs">📋</span> Copy
+                        <span className="ml-auto text-xs text-app-text-muted">Ctrl+C</span>
+                    </button>
+                    <button
+                        className="w-full text-left px-4 py-2 text-sm text-app-text-primary hover:bg-app-bg-tertiary flex items-center gap-2"
+                        onClick={() => handleContextMenuAction('paste')}
+                    >
+                        <span className="text-xs">📄</span> Paste
+                        <span className="ml-auto text-xs text-app-text-muted">Ctrl+V</span>
+                    </button>
+                    <div className="border-t border-border my-1"></div>
+                    <button
+                        className="w-full text-left px-4 py-2 text-sm text-app-text-primary hover:bg-app-bg-tertiary flex items-center gap-2"
+                        onClick={() => handleContextMenuAction('selectAll')}
+                    >
+                        <span className="text-xs">📝</span> Select All
+                        <span className="ml-auto text-xs text-app-text-muted">Ctrl+A</span>
+                    </button>
+                    <div className="border-t border-border my-1"></div>
+                    <button
+                        className="w-full text-left px-4 py-2 text-sm text-app-text-primary hover:bg-app-bg-tertiary flex items-center gap-2"
+                        onClick={() => handleContextMenuAction('bold')}
+                        disabled={!editor?.can().chain().focus().toggleBold().run()}
+                    >
+                        <Bold className="w-3 h-3" /> Bold
+                        <span className="ml-auto text-xs text-app-text-muted">Ctrl+B</span>
+                    </button>
+                    <button
+                        className="w-full text-left px-4 py-2 text-sm text-app-text-primary hover:bg-app-bg-tertiary flex items-center gap-2"
+                        onClick={() => handleContextMenuAction('italic')}
+                        disabled={!editor?.can().chain().focus().toggleItalic().run()}
+                    >
+                        <Italic className="w-3 h-3" /> Italic
+                        <span className="ml-auto text-xs text-app-text-muted">Ctrl+I</span>
+                    </button>
+                    <button
+                        className="w-full text-left px-4 py-2 text-sm text-app-text-primary hover:bg-app-bg-tertiary flex items-center gap-2"
+                        onClick={() => handleContextMenuAction('underline')}
+                    >
+                        <UnderlineIcon className="w-3 h-3" /> Underline
+                        <span className="ml-auto text-xs text-app-text-muted">Ctrl+U</span>
+                    </button>
+                    <div className="border-t border-border my-1"></div>
+                    <button
+                        className="w-full text-left px-4 py-2 text-sm text-app-text-primary hover:bg-app-bg-tertiary flex items-center gap-2"
+                        onClick={() => handleContextMenuAction('undo')}
+                        disabled={!editor?.can().chain().focus().undo().run()}
+                    >
+                        <Undo className="w-3 h-3" /> Undo
+                        <span className="ml-auto text-xs text-app-text-muted">Ctrl+Z</span>
+                    </button>
+                    <button
+                        className="w-full text-left px-4 py-2 text-sm text-app-text-primary hover:bg-app-bg-tertiary flex items-center gap-2"
+                        onClick={() => handleContextMenuAction('redo')}
+                        disabled={!editor?.can().chain().focus().redo().run()}
+                    >
+                        <Redo className="w-3 h-3" /> Redo
+                        <span className="ml-auto text-xs text-app-text-muted">Ctrl+Y</span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

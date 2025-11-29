@@ -6,6 +6,7 @@ import { Save, Trash2, X, Wand2, FileText, Sparkles, Tag, Folder } from 'lucide-
 import { autoMarkdown, summarizeText, fixAndClearText, autoTitleAndTags, autoFormatHTML } from '@/lib/ai';
 import TipTapEditor from './TipTapEditor';
 import { db } from '@/lib/localDb';
+import { loadSettings } from '@/lib/settings';
 
 import { marked } from 'marked';
 
@@ -26,6 +27,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
   const [autoSaving, setAutoSaving] = useState(false);
   const autoSaveTimeoutRef = useRef(null);
   const lastSavedNoteIdRef = useRef(null);
+  const initialContentRef = useRef({ title: '', content: '', tags: [] });
 
   // Folder picker state
   const [folders, setFolders] = useState([]);
@@ -45,6 +47,64 @@ export function NoteEditor({ note, onSave, onDelete }) {
     };
     loadFolders();
   }, []);
+
+  // Keyboard shortcuts for AI tools
+  useEffect(() => {
+    const settings = loadSettings();
+    const shortcuts = settings.shortcuts || {
+      fixText: 'Ctrl+Shift+F',
+      formatText: 'Ctrl+Shift+H',
+      summarize: 'Ctrl+Shift+S',
+      autoTags: 'Ctrl+Shift+T',
+    };
+
+    const parseShortcut = (shortcut) => {
+      const parts = shortcut.split('+').map(p => p.trim().toLowerCase());
+      return {
+        ctrl: parts.includes('ctrl'),
+        shift: parts.includes('shift'),
+        alt: parts.includes('alt'),
+        key: parts[parts.length - 1]
+      };
+    };
+
+    const handleKeyDown = (e) => {
+      const key = e.key.toLowerCase();
+      const ctrl = e.ctrlKey || e.metaKey;
+      const shift = e.shiftKey;
+      const alt = e.altKey;
+
+      // Check each shortcut
+      Object.entries(shortcuts).forEach(([action, shortcut]) => {
+        const parsed = parseShortcut(shortcut);
+        if (
+          parsed.ctrl === ctrl &&
+          parsed.shift === shift &&
+          parsed.alt === alt &&
+          parsed.key === key
+        ) {
+          e.preventDefault();
+          switch (action) {
+            case 'fixText':
+              handleAiAction('fix');
+              break;
+            case 'formatText':
+              handleAiAction('format');
+              break;
+            case 'summarize':
+              handleAiAction('summarize');
+              break;
+            case 'autoTags':
+              handleAiAction('tags');
+              break;
+          }
+        }
+      });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [content, title]);
 
   // Load draft from localStorage on mount (only for new notes)
   useEffect(() => {
@@ -84,12 +144,15 @@ export function NoteEditor({ note, onSave, onDelete }) {
         return;
       }
 
-      setTitle(note.title || '');
+      const noteTitle = note.title || '';
+      const noteTags = note.tags || [];
+      setTitle(noteTitle);
 
       // Convert Markdown to HTML if needed
       const rawContent = note.content || '';
       const isHtml = /<[a-z][\s\S]*>/i.test(rawContent);
 
+      let processedContent = rawContent;
       if (!isHtml && rawContent.trim()) {
         // Assume Markdown and convert
         // marked.parse returns a promise if async is on, but by default it's sync.
@@ -97,6 +160,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
         // marked.parse is synchronous by default unless async option is set.
         try {
           const html = marked.parse(rawContent);
+          processedContent = html;
           setContent(html);
         } catch (e) {
           console.error('Failed to parse markdown', e);
@@ -106,10 +170,17 @@ export function NoteEditor({ note, onSave, onDelete }) {
         setContent(rawContent);
       }
 
-      setTags(note.tags || []);
+      setTags(noteTags);
       setSelectedFolderId(note.folder_id || note.folderId || null);
       setHasChanges(false);
       lastSavedNoteIdRef.current = note.id;
+
+      // Store initial content for comparison
+      initialContentRef.current = {
+        title: noteTitle,
+        content: processedContent,
+        tags: noteTags
+      };
 
       // Clear draft when loading an existing note
       localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -122,6 +193,7 @@ export function NoteEditor({ note, onSave, onDelete }) {
         setTags([]);
         setHasChanges(false);
         lastSavedNoteIdRef.current = null;
+        initialContentRef.current = { title: '', content: '', tags: [] };
       }
     }
   }, [note]);
@@ -205,9 +277,38 @@ export function NoteEditor({ note, onSave, onDelete }) {
     setHasChanges(true);
   };
 
+  // Helper to extract plain text from HTML
+  const getPlainText = (html) => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
+  };
+
   const handleSave = () => {
+    // Validate content before saving
+    const plainText = getPlainText(content);
+    const trimmedTitle = title.trim();
+
+    // Don't save if content is empty or only whitespace
+    if (!plainText.trim() && !trimmedTitle) {
+      console.log('Skipping save: No content or title');
+      return;
+    }
+
+    // Check if content has actually changed
+    const hasContentChanged =
+      trimmedTitle !== initialContentRef.current.title ||
+      content !== initialContentRef.current.content ||
+      JSON.stringify(tags) !== JSON.stringify(initialContentRef.current.tags);
+
+    if (!hasContentChanged && note) {
+      console.log('Skipping save: No changes detected');
+      setHasChanges(false);
+      return;
+    }
+
     const noteData = {
-      title: title.trim() || 'Untitled',
+      title: trimmedTitle || 'Untitled',
       content: content, // This is now HTML
       tags,
       folderId: selectedFolderId,
@@ -219,19 +320,19 @@ export function NoteEditor({ note, onSave, onDelete }) {
     if (selectedFolderId) {
       localStorage.setItem(LAST_FOLDER_KEY, selectedFolderId.toString());
     }
+
+    // Update initial content reference after successful save
+    initialContentRef.current = {
+      title: trimmedTitle || 'Untitled',
+      content: content,
+      tags: [...tags]
+    };
   };
 
   const handleDelete = () => {
     if (note && confirm('Are you sure you want to delete this note?')) {
       onDelete(note.id);
     }
-  };
-
-  // Helper to extract plain text from HTML
-  const getPlainText = (html) => {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    return temp.textContent || temp.innerText || '';
   };
 
   const handleAiAction = async (action) => {

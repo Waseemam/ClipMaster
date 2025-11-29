@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Key, Sparkles, Save, Palette, Paintbrush, RotateCcw, HardDrive, Trash2, Monitor, Plus, Minus } from 'lucide-react';
+import { X, Key, Sparkles, Save, Palette, Paintbrush, RotateCcw, HardDrive, Trash2, Monitor, Plus, Minus, Keyboard } from 'lucide-react';
 import { loadSettings, saveSettings } from '@/lib/settings';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -396,6 +396,27 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
           >
             <Monitor className="w-4 h-4 inline mr-2" />
             System
+          </button>
+          <button
+            onClick={() => setActiveTab('shortcuts')}
+            className="flex-1 px-4 py-3 text-sm font-medium transition-all border-b-2"
+            style={{
+              color: activeTab === 'shortcuts' ? theme.textPrimary : theme.textSecondary,
+              borderBottomColor: activeTab === 'shortcuts' ? theme.accent : 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'shortcuts') {
+                e.target.style.color = theme.textPrimary;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'shortcuts') {
+                e.target.style.color = theme.textSecondary;
+              }
+            }}
+          >
+            <Keyboard className="w-4 h-4 inline mr-2" />
+            Shortcuts
           </button>
         </div>
 
@@ -1057,6 +1078,204 @@ export function SettingsDialog({ isOpen, onClose, onThemeChange }) {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Shortcuts Tab */}
+          {activeTab === 'shortcuts' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Keyboard className="w-5 h-5" style={{ color: theme.accent }} />
+                <h3
+                  className="text-lg font-medium"
+                  style={{ color: theme.textPrimary }}
+                >
+                  AI Tool Keyboard Shortcuts
+                </h3>
+              </div>
+
+              <p
+                className="text-sm mb-4"
+                style={{ color: theme.textMuted }}
+              >
+                Customize keyboard shortcuts for AI-powered tools in the editor.
+              </p>
+
+              <div className="space-y-4">
+                {/* Fix Text Shortcut */}
+                <div
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: theme.bgSecondary,
+                    borderColor: theme.border
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <h4
+                        className="text-sm font-medium mb-1"
+                        style={{ color: theme.textPrimary }}
+                      >
+                        Fix & Improve Text
+                      </h4>
+                      <p
+                        className="text-xs"
+                        style={{ color: theme.textMuted }}
+                      >
+                        Automatically fix grammar and improve writing
+                      </p>
+                    </div>
+                    <Input
+                      type="text"
+                      value={settings.shortcuts?.fixText || 'Ctrl+Shift+F'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        shortcuts: { ...settings.shortcuts, fixText: e.target.value }
+                      })}
+                      className="w-40 text-center font-mono text-sm"
+                      style={{
+                        backgroundColor: theme.bgPrimary,
+                        borderColor: theme.border,
+                        color: theme.textPrimary
+                      }}
+                      placeholder="e.g. Ctrl+Shift+F"
+                    />
+                  </div>
+                </div>
+
+                {/* Format Text Shortcut */}
+                <div
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: theme.bgSecondary,
+                    borderColor: theme.border
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <h4
+                        className="text-sm font-medium mb-1"
+                        style={{ color: theme.textPrimary }}
+                      >
+                        Auto Format HTML
+                      </h4>
+                      <p
+                        className="text-xs"
+                        style={{ color: theme.textMuted }}
+                      >
+                        Format and structure your content
+                      </p>
+                    </div>
+                    <Input
+                      type="text"
+                      value={settings.shortcuts?.formatText || 'Ctrl+Shift+H'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        shortcuts: { ...settings.shortcuts, formatText: e.target.value }
+                      })}
+                      className="w-40 text-center font-mono text-sm"
+                      style={{
+                        backgroundColor: theme.bgPrimary,
+                        borderColor: theme.border,
+                        color: theme.textPrimary
+                      }}
+                      placeholder="e.g. Ctrl+Shift+H"
+                    />
+                  </div>
+                </div>
+
+                {/* Summarize Shortcut */}
+                <div
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: theme.bgSecondary,
+                    borderColor: theme.border
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <h4
+                        className="text-sm font-medium mb-1"
+                        style={{ color: theme.textPrimary }}
+                      >
+                        Summarize Note
+                      </h4>
+                      <p
+                        className="text-xs"
+                        style={{ color: theme.textMuted }}
+                      >
+                        Generate a summary of your note
+                      </p>
+                    </div>
+                    <Input
+                      type="text"
+                      value={settings.shortcuts?.summarize || 'Ctrl+Shift+S'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        shortcuts: { ...settings.shortcuts, summarize: e.target.value }
+                      })}
+                      className="w-40 text-center font-mono text-sm"
+                      style={{
+                        backgroundColor: theme.bgPrimary,
+                        borderColor: theme.border,
+                        color: theme.textPrimary
+                      }}
+                      placeholder="e.g. Ctrl+Shift+S"
+                    />
+                  </div>
+                </div>
+
+                {/* Auto Tags Shortcut */}
+                <div
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: theme.bgSecondary,
+                    borderColor: theme.border
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <h4
+                        className="text-sm font-medium mb-1"
+                        style={{ color: theme.textPrimary }}
+                      >
+                        Auto Title & Tags
+                      </h4>
+                      <p
+                        className="text-xs"
+                        style={{ color: theme.textMuted }}
+                      >
+                        Generate title and tags automatically
+                      </p>
+                    </div>
+                    <Input
+                      type="text"
+                      value={settings.shortcuts?.autoTags || 'Ctrl+Shift+T'}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        shortcuts: { ...settings.shortcuts, autoTags: e.target.value }
+                      })}
+                      className="w-40 text-center font-mono text-sm"
+                      style={{
+                        backgroundColor: theme.bgPrimary,
+                        borderColor: theme.border,
+                        color: theme.textPrimary
+                      }}
+                      placeholder="e.g. Ctrl+Shift+T"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="p-3 rounded text-xs mt-4"
+                style={{
+                  backgroundColor: theme.bgTertiary,
+                  color: theme.textMuted
+                }}
+              >
+                <strong>Tip:</strong> Use combinations like Ctrl+Shift+Letter, Ctrl+Alt+Letter, or Alt+Shift+Letter. Changes take effect after saving.
               </div>
             </div>
           )}
