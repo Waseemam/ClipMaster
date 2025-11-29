@@ -19,6 +19,12 @@ const defaultSettings = {
     textMuted: '#72767d',      // Muted text
     accent: '#ef4444',         // Accent/primary color
     border: '#202225',         // Border color
+  },
+  shortcuts: {
+    fixText: 'Ctrl+Shift+F',
+    formatText: 'Ctrl+Shift+H',
+    summarize: 'Ctrl+Shift+S',
+    autoTags: 'Ctrl+Shift+T',
   }
 };
 
